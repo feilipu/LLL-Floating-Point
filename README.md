@@ -4,34 +4,30 @@
 
 #Lawrence Livermore Floating point packages for the 8008 and 8080
 
-Lawrence Livermore (National) Labs produced an 8080 floating point package in 1975, based on 8008 code. Versions became availble in the CP/M community and in Dr Dobb's Journal and in an IEEE publication; but they were incomplete. I made them available in that form, on my Web site several years ago. These programs as corrected are now available here on my site. I've also added discussion and information about another 8080 floating point package from the 1970'2, and discussiono of early floating point chips, now often called "math coprocessors". [Web page](http://www.retrotechnology.com/herbs_stuff/float.html) and archive built by Herb Johnson. Last updated Feb 13 2015.
+Lawrence Livermore (National) Labs produced an 8080 floating point package in **1975**, based on 8008 code. Versions became available in the CP/M community and in Dr Dobb's Journal and in an IEEE publication; but they were incomplete. These programs as corrected are now available here on Herb's site. He also added discussion and information about another 8080 floating point package from the 1970'2, and discussion of early floating point chips, now often called "math coprocessors". [Web page](http://www.retrotechnology.com/herbs_stuff/float.html) and archive built by Herb Johnson.
+Last updated Feb 13 2015.
 
 # Lawrence Livermore (National) Labs Floating Point
 
-1975: Here is the [PDF of the original LLL document](http://www.llnl.gov/tid/lof/documents/pdf/171286.pdf):
+**1975**: Here is the [PDF of the original LLL document](http://www.llnl.gov/tid/lof/documents/pdf/171286.pdf):
 
->   UCRL-51940, "Floating-Point Package for Intel 8008 and 8080 Microprocessors"
->   by Michael D. Maples
->   Lawrence Livermore Laboratory,
->   University of California/Livermore, California 94550,
->   October 24, 1975
-
+>   UCRL-51940, [Floating-Point Package for Intel 8008 and 8080 Microprocessors](http://www.llnl.gov/tid/lof/documents/pdf/171286.pdf) by Michael D. Maples, Lawrence Livermore Laboratory, University of California/Livermore, California 94550, October 24, 1975
 
 Other LLL publications about LLL BASIC are:
 
->["User's Guide to LLL BASIC"](http://www.osti.gov/scitech/biblio/7342209), April 1976 and [Users Guide to the LLL Basic Interpreter](http://www.osti.gov/scitech/biblio/7303688/), June 1977. These are freely available (US Govt publications are not copyrighted) and are online as of Nov 2014. The June version is very similar to the April version. I have copies available if these go offline.
+>[User's Guide to LLL BASIC](http://www.osti.gov/scitech/biblio/7342209), April 1976 and [Users Guide to the LLL Basic Interpreter](http://www.osti.gov/scitech/biblio/7303688/), June 1977.
+
+These are freely available (US Govt publications are not copyrighted) and are online as of Nov 2014. The June version is very similar to the April version.
 
 In **1977**, a version was published in Dr. Dobb's Journal in Jan. 1977. There was a brief article in IEEE Computer magazine in Sept. The reference at the IEEE Web site is: "Real-Time Microcomputer Applications Using LLL Basic," Computer , vol.10, no.9, pp.14,21, Sept. 1977. IEEE charges for copies of its articles and actively prohibits online distribution. The article lists three programs, one in assembly language; better examples are available in the user's guides cited above.
 
-Sometime after 2008, bitsavers.org archived the following LLL documents from 1977. In a directory/folder at this link there are "LLL_BASIC_Part2_BASIC_Interpreter_Jan77.pdf" and "LLL_BASIC_Part4_ODT-80_Mar77.pdf".
+(Thanks to Neil McNeight for the osti, and IEEE references.)
 
-(Thanks to Neil McNeight for the osti, IEEE and bitsavers references.)
+**1980's**: A version of the code was offered on CPMUG disks #2 and disk #10; as part of LLL "floating point BASIC". Files and folders with the contents of those disks, can be obtained from the retroarchive Web site as CPMUG010.ARK and CPMUG002.ARK. They should also be on archives or images of the Walnut Creek CP/M CD-ROM, found on many Web CP/M archive sites. Of course "010" is code from disk #10, and "002" from disk #2. These archives DO NOT INCLUDE THE SQUARE ROOT ROUTINE which is in the original document and PDF. The code submitted for disk #2 includes simple CP/M I/O code; for disk #10 that additional code includes CP/M file system support. There's few changes to the LLL code.
 
-1980's: A version of the code was offered on CPMUG disks #2 and disk #10; as part of LLL "floating point BASIC". Files and folders with the contents of those disks, can be obtained from the retroarchive Web site as CPMUG010.ARK and CPMUG002.ARK. They should also be on archives or images of the Walnut Creek CP/M CD-ROM, found on many Web CP/M archive sites. Of course "010" is code from disk #10, and "002" from disk #2. These archives DO NOT INCLUDE THE SQUARE ROOT ROUTINE which is in the original document and PDF. The code submitted for disk #2 includes simple CP/M I/O code; for disk #10 that additional code includes CP/M file system support. There's few changes to the LLL code.
+**Sept 2006**: Emmanuel Roche, AKA "French Luser", led a discussion in com.os.cpm (an old Usenet CP/M email discussion group) about 8080 floating point code. Roche posted part of the LLL document text but not the code of the document. Later, Roche provided privately to me his version of the source code, with square root code included, and more commentary.
 
-Sept 2006: Emmanuel Roche, AKA "French Luser", led a discussion in com.os.cpm (an old Usenet CP/M email discussion group) about 8080 floating point code. Roche posted part of the LLL document text but not the code of the document. Later, Roche provided privately to me his version of the source code, with square root code included, and more commentary.
-
-For some time, this Web page carried multiple versions of the source and discussion about difference. In 2015, I simply took the CPMUG #2 code and produced a version which 1) is verified against the LLL documented version and 2) includes the simple CP/M code from disk #2 as cited above. My thanks to Bill Beech; we took turns editing and assembling the source, and comparing the octal produced against the octal-based listing in the LLL document.
+For some time, this Web page carried multiple versions of the source and discussion about difference. In 2015, Herb simply took the CPMUG #2 code and produced a version which 1) is verified against the LLL documented version and 2) includes the simple CP/M code from disk #2 as cited above. My thanks to Bill Beech; we took turns editing and assembling the source, and comparing the octal produced against the octal-based listing in the LLL document.
 
 [Here's the 8080 ASM source for the Lawrence Livermore 1975 floating point package](http://www.retrotechnology.com/herbs_stuff/lll_float_8080_clean.asm). Additional code added in the CPMUG disk #2 is noted. [Here's an octal-based 8080 listing of that code](http://www.retrotechnology.com/herbs_stuff/lll_float_8080_beech.lst), which can be compared to the octal listing. The assembly is courtesy of Bill Beech and his 8080 cross assembler.
 
