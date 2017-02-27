@@ -33,3 +33,7 @@ For some time, this Web page carried multiple versions of the source and discuss
 
 Note the title of the LLL document is *8008 and 8080....*. The 8080 code they provided is code compatible with Intel's 8008 mnemonics as revised by them around 1975. Here's an 8008 assembly listing of almost the same LLL code. The differences are that decimal constants in the 8080 source were appended with *D*, so that the assembler would not assume they were octal. Assembly errors in this listing are due to the added CP/M code. As of this date, the resulting 8008 code has not been tested on an 8008 simulator or physical computer. Thanks again to Bill Beech for some of this work and his commentary.
 
+# This Project for RC2014 & YAZ180
+
+**2017**: Building this code to work on the [RC2014](http://rc2014.co.uk) and on the [YAZ180](https://feilipu.me/2016/05/23/another-z80-project/) platforms. Mainly to enable me to test against the Am9511A-1 APU device.
+

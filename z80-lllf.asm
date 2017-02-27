@@ -1,74 +1,119 @@
-;this version from CPMUG disk #2 - CP/M Users Group library
+; this version from CPMUG disk #2 - CP/M Users Group library
 ; original LLL code restored Herb Johnson Feb 2015
 ; original LLL code from "Floating Point Package for
-; INtel 8008 and 8080 Microprocessors" by Maples Oct 24 1975
+; Intel 8008 and 8080 Microprocessors" by Maples Oct 24 1975
 ; URCL-51940 publication from Lawrence Livermore Laboratory
 ; 171286.PDF 
 ;
 ; fixes:
-; 0) many lines had space in column 1! lables become operands!
+; 0) many lines had space in column 1! labels become operands!
 ; 1) added LLL square root routine
 ; 2) added missing "CALL SIGN" in CVRT routine
 ; 3) replaced ERR routine with one from LLL document
 ; 4) commented out "ORA A" at end of SAVEN
 ;
+; ###S
+; MODIFIED BY TONY GOLD FOR NON-MACRO ASSEMBLER
+; CHANGES WITHIN ;###S AND ;###E LINES
+; ALL ORIGINAL CODE RETAINED AS COMMENTS
+; ###E
+;
+; //// FLOATING POINT PACKAGE FOR THE MCS8
+; //// BY DAVID MEAD
+; //// MODIFIED BY HAL BRAND 9/6/74
+; //// MODIFIED FOR 24 BIT MANTISSAS***********
+; //// PLUS ADDED I/O CONVERSION ROUTINES
+; //// NEW ROUTINE COMMENTS
+; //// ARE PRECEEDED BY /
+; //// OTHER CHANGES ARE NOTED BY **
+; //// MODIFIED BY FRANK OLKEN 6/28/75
+;
+;
 ;###S
-;MODIFIED BY TONY GOLD FOR NON-MACR0 ASSEMBLER
-;CHANGES WITHIN ;###S AND ;###E LINES
-;ALL ORIGINAL CODE RETAINED AS COMMENTS
-;###E
-;
-;       ////FLOATING POINT PACKAGE FOR THE MCS8
-;       ////BY DAVID MEAD
-;       ////MODIFIED BY HAL BRAND 9/6/74
-;       ////MODIFIED FOR 24 BIT MANTISSAS***********
-;       ////PLUS ADDED I/O CONVERSION ROUTINES
-;       ////NEW ROUTINE COMMENTS
-;       ////ARE PRECEEDED BY /
-;       ////OTHER CHANGES ARE NOTED BY **
-;        ////MODIFIED BY FRANK OLKEN 6/28/75
-;
-;
-;###S
-;	EQUATES FOR RELOCATED PACKAGES
-;	ORG	10DDH
-;INTERP:	EQU	0100H
-;FPTBL:	EQU	1774H
-;;IOJUMP:	EQU	1900H
-;CONIN:	EQU	IOJUMP+4
-;STATUS:	EQU	IOJUMP+0AH
-;INP:	EQU	FPTBL+33H
-;OUTR:	EQU	FPTBL+36H
-;OUTL:	EQU	INTERP+7D9H
-;INL:	EQU	INTERP+996H
-;         ORG 110000Q
-
+;   EQUATES FOR RELOCATED PACKAGES
+;           .ORG	10DDH
+; INTERP:	.EQU	0100H
+; FPTBL:    .EQU	1774H
+; IOJUMP:   .EQU	1900H
+; CONIN:	.EQU	IOJUMP+4
+; STATUS:	.EQU	IOJUMP+0AH
+; INP:      .EQU	FPTBL+33H
+; OUTR:     .EQU	FPTBL+36H
+; OUTL:     .EQU	INTERP+7D9H
+; INL:      .EQU	INTERP+996H
+;           .ORG    110000Q
 
 ;
-;
-;CPM:	EQU	5
-;CONIN     EQU    404Q        ; JMP TABLE LOCATION OF CONSOLE INP.
-;STATUS    EQU    412Q        ; JMP TABLE LOC. FOR STATUS PORT INPUT
-;OUTR      EQU    113775Q            ;LINK TO BASIC
-;OUTL      EQU    103726Q
-;INL       EQU    104623Q
-;INP       EQU    113772Q            ;LINK TO BASIC
+; CPM:      .EQU	5
+; CONIN     .EQU    404Q        ; JMP TABLE LOCATION OF CONSOLE INP.
+; STATUS    .EQU    412Q        ; JMP TABLE LOC. FOR STATUS PORT INPUT
+; OUTR      .EQU    113775Q     ;LINK TO BASIC
+; OUTL      .EQU    103726Q
+; INL       .EQU    104623Q
+; INP       .EQU    113772Q     ;LINK TO BASIC
 ;###E
 
-        ORG     4400Q
-
-OUTR	EQU     300Q            ;set to ODT's TTY routin
-INP	    EQU     077Q
+;OUTR	.EQU     300Q            ;set to ODT's TTY routing
+;INP	.EQU     077Q
 
 
-MINCH   EQU    300Q             ;MINIMUM CHARACTERISTIC WITH SIGN EXTENDED
-MAXCH   EQU    077Q             ;MAXIMUM CHARACTERISTIC WITH SIGN EXTENDED
+;       RC2014 Function Calls
+TX0        .EQU    00C9H
+RX0        .EQU    009FH
+RX0_CHK    .EQU    0108H
+                                ; from Nascom Basic Symbol Tables
+DEINT      .EQU    0B57H        ; Function DEINT to get USR(x) into DE registers
+ABPASS     .EQU    12CCH        ; Function ABPASS to put output into AB register for return
+
+;       YAZ180 Function Calls
+;TX0       .EQU    016BH
+;RX0       .EQU    0154H
+;RX0_CHK   .EQU    01A9H
+                                ; from Nascom Basic Symbol Tables
+;DEINT     .EQU    0C3FH        ; Function DEINT to get USR(x) into DE registers
+;ABPASS    .EQU    13B4H        ; Function ABPASS to put output into AB register for return
+ 
+OUTR	.EQU     TX0             ;set to RC2014/YAZ180 Serial TTY routing
+INP     .EQU     RX0
+
+MINCH   .EQU    300Q             ;MINIMUM CHARACTERISTIC WITH SIGN EXTENDED
+MAXCH   .EQU    077Q             ;MAXIMUM CHARACTERISTIC WITH SIGN EXTENDED
+;
+;
+;******************************************************
+;       //// SIMPLE EXERCISE PROGRAM
+;******************************************************
+;
+SCRPG   .EQU    23H             ;SCRATCH PAGE IS 2300H
+OP1     .EQU    00H             ;STARTING LOCATION OF OPERAND 1
+OP2     .EQU    OP1+4           ;STARTING LOCATION OF OPERAND 2
+RSULT   .EQU    OP2+4           ;STARTING LOCATION OF RESULT
+SCR     .EQU    RSULT+4         ;STARTING LOCATION OF SCRATCH AREA
+
+        .ORG    3000H
+        
+TEST:
+        MVI     H, SCRPG        ;SET H REGISTER TO RAM SCRATCH PAGE
+        MVI     L, OP1          ;POINTER TO OPERAND 1
+        MVI     C, SCR          ;SCRATCH AREA
+        CALL    INPUT           ;INPUT OPERAND 1 FROM TTY
+        MVI     L, OP2          ;POINTER TO OPERAND 2
+        MVI     C, SCR          ;SCRATCH AREA
+        CALL    INPUT           ;INPUT OPERAND 2 FROM TTY
+        MVI     L, OP1          ;OPERAND 1 POINTER IN (H)L
+        MVI     B, OP2          ;OPERAND 2 POINTER IN (H)B
+        MVI     C, RSULT        ;RESULT TO (H)C POINTER
+        CALL    LDIV            ;DIVIDE OP1 BY OP2 AN PLACE RESULT IN RSULT
+        MVI     L, RSULT        ;(H)L POINTER NOW RSULT
+        MVI     C, SCR          ;SCRATCH AREA
+        CALL    CVRT            ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
+        JP      TEST            ;START AGAIN
+
 ;
 ;
 ;******************************************************
 ;       //// DIVIDE SUBROUTINE
 ;******************************************************
-;
 ;
 LDIV:   CALL    CSIGN           ;COMPUTE SIGN OF RESULT
         CALL    ZCHK            ;CHECK IF DIVIDEND = ZERO
@@ -134,15 +179,16 @@ LADD:   XRA     A               ;/***SET UP TO ADD
 ;       //// SUBTRACTION SUBROUTINE
 ;******************************************************
 ;
-;
-LSUB:   MVI     A,200Q          ;/****SET UP TO SUBTRACT
-;   SUBROUTINE LADS
+;       SUBROUTINE LADS
 ;
 ;       FLOATING POINT ADD OR SUB
 ;       A 128 ON ENTRY SUB
 ;       A 0 ON ENTRY ADD
 ;       F-S F,FIRST OPER DESTROYED
 ;       BASE 11 USED FOR SCRATCH
+;
+LSUB:   MVI     A,200Q          ;/****SET UP TO SUBTRACT
+;
 LADS:   CALL    ACPR            ;SAVE ENTRY PNT AT BASE 6
         CALL    BCHK            ;CHECK ADDEND/SUBTRAHEND = ZERO
         RZ                      ;IF SO, RESULT=ARG SO RETURN
@@ -187,7 +233,7 @@ EQ02:   CALL    LASD            ;CHECK WHAT TO
 ;
 NOT0:   MVI     D,1             ;WILL TEST FOR SUB
         ANA     D
-        JZ      ADDZ            ;LSB 1 INPLIES SUB
+        JZ      ADDZ            ;LSB 1 IMPLIES SUB
         CALL    TSTR            ;CHECK NORMAL/REVERSE
         JZ      SUBZ            ;IF NORMAL,GO SUBZ
         MOV     A,L             ;OTHERWISE REVERSE
@@ -254,6 +300,7 @@ MANT:   MOV     E,L             ;SAVE L PTR
 ;       UTILITY ROUTINE FOR LADS
 ;       CALCULATES TRUE OPER AND SGN
 ;       RETURNS ANSWER IN
+;
 LASD:   CALL    MSFH            ;FETCH MANT SIGNS, F IN A,D
         CMP     E               ;COMPARE SIGNS
         JC      ABCH            ;F\,S- MEANS GO TO A BRANCH
@@ -296,6 +343,7 @@ L131:   MVI     A,131
 ;       COMPARES THE MAGNITUDE OF
 ;       TWO FLOATING PNT NUMBERS
 ;       Z[1 IF [,C[1 IF F.LT.S.
+;
 LMCM:   CALL    CCMP            ;CHECK CHARS
         RNZ                     ;RETURN IF NOT EQUAL
         CALL    DCMP            ;IF EQUAL, CHECK MANTS
@@ -359,7 +407,7 @@ MADD:   MOV     A,L             ;INTERCHANGE
 ;       NUMBER, PRESERVING ITS ORIGINAL SIGN.
 ;       WE CHECK FOR UNDERFLOW AND SET THE CONDITION
 ;       FLAG APPROPRIATELY.  (SEE ERROR RETURNS).
-;       THER IS AN ENTRY POINT TO FLOAT A SIGNED INTEGER
+;       THERE IS AN ENTRY POINT TO FLOAT A SIGNED INTEGER
 ;       (FLOAT) AND AN ENTRY POINT TO FLOAT AN UNSIGNED
 ;       INTEGER.
 ;
@@ -386,21 +434,21 @@ FXL2:   CALL    ZMCHK           ;CHECK FOR ZERO MANTISSA
 REP6:   MOV     A,M             ;GET MOST SIGNIFICANT BYTE OF
                                 ;MANTISSA
         ORA     A               ;SET FLAGS
-        JM      SCHAR           ;IF MOST SIGNFICANT BIT = 1 THEN
+        JM      SCHAR           ;IF MOST SIGNIFICANT BIT = 1 THEN
                                 ;NUMBER IS NORMALIZED AND WE GO TO
                                 ;STORE THE CHARACTERISTIC
         MOV     A,D             ;OTHERWISE CHECK FOR UNDERFLOW
         CPI     MINCH           ;COMPARE WITH MINIMUM CHAR
         JZ      WUND            ;IF EQUAL THEN UNDERFLOW
         CALL    DLST            ;SHIFT MANTISSA LEFT
-        DCR     D               ;DECREMENT CHARACTERSTIC
+        DCR     D               ;DECREMENT CHARACTERISTIC
         JMP     REP6            ;LOOP AN TEST NEXT BIT
 SCHAR:  JMP     INCR3           ;STORE THE CHARACTERISTIC USING
                                 ;THE SAME CODE AS THE INCREMENT
 ;
 DFXL:   MOV     E,L             ;ENTER HERE TO FLOAT UNSIGNED
                                 ;INTEGER
-                                ;FIRT SAVE L IN E
+                                ;FIRST SAVE L IN E
         INR     L               ;MAKE (H,L) POINT TO CHAR
         INR     L               ;MAKE (H,L) POINT TO CHAR
         INR     L               ;MAKE (H,L) POINT TO CHAR
@@ -430,10 +478,10 @@ ZMCHK:  INR     L               ;SET L TO POINT LAST BYTE OF MANTISSA
         INR     L               ;SET L TO POINT TO LAST BYTE OF MANTISSA
         MOV     A,M             ;LOAD LEAST SIGNIFICANT BYTE
         DCR     L               ;L POINTS TO MIDDLE BYTE
-        ORA     M               ;OR WITH LEAST SIGNFICANT BYTE
-        DCR     L               ;L POINTS TO MOST SIGNFICANT BYTE
+        ORA     M               ;OR WITH LEAST SIGNIFICANT BYTE
+        DCR     L               ;L POINTS TO MOST SIGNIFICANT BYTE
                                 ;OF MANTISSA (ORIGINAL VALUE)
-        ORA     M               ;OR IN MOST SIGNFICANT BYTE
+        ORA     M               ;OR IN MOST SIGNIFICANT BYTE
         RET                     ;RETURNS WITH ZERO FLAG SET APPROPRIATELY
 ;
 ;  SUBROUTINE BCHK
@@ -525,7 +573,7 @@ DADD:   MOV     E,L             ;SAVE BASE IN E
 ;
 ;       CLEARS TWO SUCCESSIVE
 ;       LOCATIONS OF MEMORY
-
+;
 DCLR:   XRA     A
         MOV     M,A
         INR     L
@@ -638,7 +686,7 @@ CFCHE:  MOV     E,L             ;SAVE LPTR IN E
 ;       D = A
 ;       B,C,H,L = SAME AS ON ENTRY
 ;
-CCMP:   CALL    CFCHE           ;FETCH CHARACTERTISTICS WITH SIGN EXTENDED
+CCMP:   CALL    CFCHE           ;FETCH CHARACTERISTICS WITH SIGN EXTENDED
                                 ;INTO A (CHAR(H,L)) AND E (CHAR(H,B)) REGISTERS
         MOV     D,A             ;SAVE CHAR (H,L)
         SUB     E               ;SUBTRACT E (CHAR(H,B))
@@ -737,9 +785,9 @@ WMANT:  DCR     L               ;POINT LEAST SIGNIFICANT BYTE
         RET                     ;RETURN (H,L) POINTS TO BEGINNING OF
                                 ;FLOATING POINT RESULT
 ;
-; ROUTINE TO WRITE CHARACTERTIC FOR ERROR RETURNS
+; ROUTINE TO WRITE CHARACTERISTIC FOR ERROR RETURNS
 ; NOTE:  WE PRESERVE ORIGINAL MANTISSA SIGN
-; ON ENTRY D CONTAINS NEW CHARACTERTISTIC TO BE STORED.
+; ON ENTRY D CONTAINS NEW CHARACTERISTIC TO BE STORED.
 ;
 WCHAR:  INR     L               ;SET (H,L) TO POINT TO CHARACTERISTIC
         INR     L               ;PART OF ABOVE
@@ -769,7 +817,7 @@ INDFC:  MOV     E,L             ;SAVE LPTR IN E
 ;
 ;   SUBROUTINE WZERC
 ;
-;       THIS ROUTINE WRITES A NORMAL FLAOTING POINT ZERO
+;       THIS ROUTINE WRITES A NORMAL FLOATING POINT ZERO
 ;       AT (H,C), SETS THE CONDITION FLAG AND RETURNS
 ;
 WZERC:  MOV     E,L             ;SAVE LPTR IN E
@@ -783,7 +831,7 @@ WZERC:  MOV     E,L             ;SAVE LPTR IN E
 ;       THIS SUBROUTINE INCREMENTS THE CHARACTERISTIC
 ;       OF THE FLOATING POINT NUMBER POINTED TO BY (H,L).
 ;       WE TEST FOR OVERFLOW AND SET APPROPRIATE FLAG.
-;       (SEE ERRROR RETURNS).
+;       (SEE ERROR RETURNS).
 ;
 ;   REGISTERS ON EXIT:
 ;
@@ -818,7 +866,7 @@ SCCFG:  XRA    A                ;SET SUCCESS FLAG
 ;       THIS SUBROUTINE DECREMENTS THE CHARACTERISTIC
 ;       OF THE FLOATING POINT NUMBER POINTED TO BY (H,L).
 ;       WE TEST FOR UNDERFLOW AND SET APPROPRIATE FLAG.
-;       (SEE ERRROR RETURNS).
+;       (SEE ERROR RETURNS).
 ;
 ;   REGISTERS ON EXIT:
 ;
@@ -829,7 +877,7 @@ SCCFG:  XRA    A                ;SET SUCCESS FLAG
 DECR:   CALL    GCHAR           ;GET CHAR WITH SIGN EXTENDED
         CPI     MINCH           ;COMPARE WITH MIN CHAR PERMITTED
         JZ      UFLW1           ;DECREMENT WOULD CAUSE UNDERFLOW
-        MOV     D,A             ;SAVE CHARACTERSTIC IN D
+        MOV     D,A             ;SAVE CHARACTERISTIC IN D
         DCR     D               ;DECREMENT CHARACTERISTIC
         JMP     INCR2           ;GO STORE IT BACK
 ;
@@ -969,7 +1017,7 @@ REP5:   MOV     L,C             ;CPTR TO L
 LDCP:   CALL    CFCHE           ;SET E=CHAR(H,B), A=CHAR(H,L)
         SUB     E               ;SUBTRACT TO GET NEW CHARACTERISTIC
         JMP     CCHK            ;GO CHECK FOR OVER/UNDERFLOW
-                                ;AND STORE CHARACTERTISTIC
+                                ;AND STORE CHARACTERISTIC
 ;
 ;
 ;   SUBROUTINE LMCP
@@ -993,10 +1041,10 @@ LMCP:   CALL    CFCHE           ;SET E=CHAR(H,B), A=CHAR(H,L)
         ADD     E               ;ADD TO GET NEW CHARACTERISTIC
                                 ;NOW FALL INTO THE ROUTINE
                                 ;WHICH CHECKS FOR OVER/UNDERFLOW
-                                ;AND STORE CHARACTERTISTIC
+                                ;AND STORE CHARACTERISTIC
 ;
 ;
-;   SBUROUTINE CCHK
+;   SUBROUTINE CCHK
 ;
 ;       THIS SUBROUTINE CHECKS A CHARACTERISTIC IN
 ;       THE ACCUMULATOR FOR OVERFLOW OR UNDERFLOW.
@@ -1048,7 +1096,7 @@ OFLWC:  MOV     E,L             ;SAVE L IN E
 ;
 UFLWC:  MOV     E,L             ;SAVE L IN E
         MOV     L,C             ;SET L=CPTR, SO (H,L)=ADDR OF RESULT
-        CALL    WUND            ;WRITE OUT UNDEFLOW
+        CALL    WUND            ;WRITE OUT UNDERFLOW
         MOV     L,E             ;RESTORE L
         RET                     ;RETURN
 ;
@@ -1143,11 +1191,10 @@ BCTL:   MOV     E,L             ;LPTR TO E
         RET
 ;
 ;HRJ for some reason the square root routine was not included
-
 ;
-;******************************************************
-;       ///SQUARE ROOT
-;          ***************
+;
+;       SUBROUTINE DSQRT
+;
 ;       THE L REG PTS TO THE    TO BE
 ;       OPERATED ON.
 ;       THE B REG PTS TO THE LOC WHERE
@@ -1155,26 +1202,26 @@ BCTL:   MOV     E,L             ;LPTR TO E
 ;       THE C REG PTS TO 17(10) SCRATCH 
 ;       AREA.
 ;       WHERE:
-;       C = INTERATION COUNT
+;       C = ITERATION COUNT
 ;       C+1 = L REG
 ;       C+2 = B REG
 ;       C+3 TO C+6 = INTRL REG 1
 ;       C+7 TO C+10 = INTRL REG 2
 ;       C+11 TO C+14 = INTRL REG 3
 ;       C+15 = 
-;******************************************************
+;
 DSQRT:	MOV     A,L	        ;STORE L IN
-	MOV     L,C	        ;2ND WRD SCRTCH
+	MOV     L,C	        ;2ND WRD SCRATCH
 	MVI     M,0             ;INITIALIZE ITER COUNT
 	INR     L
 	MOV     M,A
 	INR     L               ;STR B IN 3RD
-	MOV     M,B             ;WRD OF SCRTCH
+	MOV     M,B             ;WRD OF SCRATCH
 	INR     L               ;SET C TO INTRL
 	MOV     C,L             ;REG I
 	MOV     L,A             ; SET L PRT AT
 	MOV     A,H             ;SET REGS FOR COPY
-	CALL    COPY		; CPY TC INTRL REG1
+	CALL    COPY		; COPY TC INTRL REG1
 	CALL    GCHR		;PUT CHR IN A
 	MOV     B,A	        ;MAKE COPY
 	ANI     200Q		;OK NEG
@@ -1190,7 +1237,7 @@ DSQRT:	MOV     A,L	        ;STORE L IN
 	JMP     AGN4
 EPOS:	RAR			;DIV BY 2
 	ANI     177Q
-	MOV     M,A		;SAVE IST APPROX
+	MOV     M,A		;SAVE 1ST APPROX
 AGN4:	MOV     L,C		;SET REGS
 	MOV     A,C		;TO COPY 1ST
 	ADI     4		;APPROX
@@ -1201,11 +1248,11 @@ AGN4:	MOV     L,C		;SET REGS
 	SUI     4		;MULTIPLY INTRL REG 1
 	MOV     L,A
 	MOV     B,C		;TIME INTRL REG2
-	ADI     10Q		;PLASE RESULT IN
+	ADI     10Q		;PLACE RESULT IN
 	MOV     C,A		;INMTRL REG 3
 	CALL    LMUL
 	MOV     A,C
-	SUI     10Q		;COPY ORG INTO
+	SUI     10Q		;COPY .ORG INTO
 	MOV     C,A		;INTRL REG 1
 	SUI     2
 	MOV     L,A
@@ -1237,7 +1284,7 @@ AGN4:	MOV     L,C		;SET REGS
 	MOV     M,B
 	MOV     A,B
 	CPI     5		;IF = 5 RTN ANS
-	JNZ     AGN4		;OTERHWISE CONT
+	JNZ     AGN4		;OTHERWISE CONT
 	MOV     L,C
 ALDN:	DCR     L		;COPY ANS INTO
 	MOV     C,M		;LOC REQUESTED
@@ -1250,22 +1297,15 @@ ERSQ:	MOV     L,C
 	JMP     ALDN
 ;                        ; C+1 = L REG
 ;
-;
-; HRJ end of missing square root routine
-;
-;
 ;******************************************************
 ;       //// 5 DIGIT FLOATING PT. OUTPUT
 ;******************************************************
 ;
 ;
-;
-;
-;       *******ROUTINE TO CONVERT FLOATING PT.
-;       ***NUMBERS TO ASCII AND OUTPUT THEM VIA A SUBROUTINE
-;       ***CALLED OUTR  -  NOTE: THIS IS CURRENTLY SET
-;       ***TO ODT'S OUTPUT ROUTINE
-;
+;       ROUTINE TO CONVERT FLOATING PT.
+;       NUMBERS TO ASCII AND OUTPUT THEM VIA A SUBROUTINE
+;       CALLED OUTR  -  NOTE: THIS IS CURRENTLY SET
+;       TO ODT'S OUTPUT ROUTINE
 ;
 CVRT:   CALL    ZCHK            ;CHECK FOR NEW ZERO
         JNZ     NNZRO           ;NOT ZERO
@@ -1309,12 +1349,12 @@ NZRO:   RLC                     ;MOVE IT TO SIGN POSITION
         MOV     M,A             ;SAVE SIGN OF EXP.
         MOV     A,B             ;GET MANT. SIGH BACK
         CALL    SIGN            ;OUTPUT SIGN
-        MVI     L,(TEN5 AND 377Q)  ;TRY MULT. OR DIV. BY 100000 FIRST
+        MVI     L,TEN5 & 377Q   ;TRY MULT. OR DIV. BY 100000 FIRST
         CALL    COPT            ;MAKE A COPY IN RAM
 TST8:   CALL    GCHR            ;GET CHAR. OF NUMBER
         MOV     B,A             ;SAVE A COPY
         ANI     100Q            ;GET ABSOLUTE VALUE OF CHAR
-        MOV     A,B             ;INCASE PLUS
+        MOV     A,B             ;IN CASE PLUS
         JZ      GOTV            ;ALREADY PLUS
         MVI     A,200Q          ;MAKE MINUS INTO PLUS
         SUB     B               ;PLUS=200B-CHAR
@@ -1324,11 +1364,11 @@ GOTV:   CPI     22Q             ;TEST FOR USE OF 100000
         ADI     5               ;INCREMENT DEC. EXPONENT BY 5
         MOV     M,A             ;UPDATE MEM
         JMP     TST8            ;GO TRY AGAIN
-TRY1:   MVI     L,(TEN AND 377Q)  ;NOW USE JUST TEN
+TRY1:   MVI     L,TEN & 377Q   ;NOW USE JUST TEN
         CALL    COPT            ;PUT IT IN RAM
 TST1:   CALL    GCHR            ;GET CHARACTERISTIC
         CPI     1               ;MUST GET IN RANGE 1 TO 6
-        JP      OK1             ;ATLEAST ITS 1 OR BIGGER
+        JP      OK1             ;AT LEAST ITS 1 OR BIGGER
 MDGN:   CALL    MORD            ;MUST MUL OF DIV BY 10
         ADI     1               ;INCREMENT DECIMAL EXP.
         MOV     M,A             ;UPDATE MEM
@@ -1425,7 +1465,7 @@ SIGN:   ANI     200Q            ;GET SIGN BIT
         MVI     A,255Q          ;NEGATIVE
 PLSV:   CALL    OUTR            ;OUTPUT SIGN
         RET
-GCHR:   MOV     L,C             ;GET CHARCTERISTIC
+GCHR:   MOV     L,C             ;GET CHARACTERISTIC
 GETA:   INR     L               ;MOVE TO IT
         INR     L
         INR     L               ;/***TP
@@ -1445,7 +1485,7 @@ MORD:   CALL    GETEX           ;MUL OR DIV DEPENDING ON EXP
         CALL    LMUL            ;MULT.
 FINUP:  MOV     A,C             ;SAVE LOC. OF RESULT
         MOV     C,L             ;C=LOC OF NUMBER (IT WAS DESTROYED)
-        MOV     L,A             ;SET L TO LOC. OF RESUTL
+        MOV     L,A             ;SET L TO LOC. OF RESULT
         MOV     A,H             ;SHOW RAM TO RAM TRANSFER
         CALL    COPY            ;MOVE RESULT TO NUMBER
 GETEX:  MOV     L,C             ;NOW GET DECIMAL EXP
@@ -1462,13 +1502,13 @@ TWOD:   CALL    CTWO            ;CONVERT TO 2 DIGITS
         DCR     E               ;DECREMENT NEGATIVE EXP SINCE 2 DIGITS
 FINIT:  MOV     M,E             ;RESTORE EXP WITH NEW VALUE
         MOV     A,B             ;NOW DO 2ND DIGIT
-        JMP     INPOP           ;GO OUT 2ND AND REST FO DIGITS
+        JMP     INPOP           ;GO OUT 2ND AND REST OF DIGITS
 ADD1:   INR     E               ;COMPENSATE FOR 2 DIGITS
         JMP     FINIT
 CTWO:   MVI     E,377Q          ;CONVERT 2 DIGIT BIN TO BCD
 LOOP:   INR     E               ;ADD UP TENS DIGIT
         SUI     12Q             ;SUBTRACT 10
-        JP      LOOP            ;TIIL NEGATIVE RESULT
+        JP      LOOP            ;TILL NEGATIVE RESULT
         ADI     12Q             ;RESTORE ONES DIGIT
         MOV     B,A             ;SAVE ONES DIGIT
         MOV     A,E             ;GET TENS DIGIT
@@ -1478,7 +1518,7 @@ LOOP:   INR     E               ;ADD UP TENS DIGIT
 COPT:   MOV     A,C             ;COPY FROM 10N TO RAM
         ADI     5
         MOV     C,A             ;SET C TO PLACE TO PUT
-        MVI     A,(TEN5/256)
+        MVI     A,TEN5/256
         CALL    COPY            ;COPY IT
         MOV     A,C             ;NOW RESET C
         SUI     5
@@ -1507,8 +1547,8 @@ COPY:   MOV     B,H             ;SAVE RAM H
         RET                     ;ALL DONE
 ;
 ;
-TEN5:   DB      303Q,120Q,0Q,21Q  ;303240(8) = 100000.
-TEN:    DB      240Q,0Q,0Q,4Q  ;12(8) = 10
+TEN5:   .DB      303Q,120Q,0Q,21Q  ;303240(8) = 100000.
+TEN:    .DB      240Q,0Q,0Q,4Q  ;12(8) = 10
 ;
 ;       SCRATCH MAP FOR I/O CONVERSION ROUTINES
 ;
@@ -1518,7 +1558,7 @@ TEN:    DB      240Q,0Q,0Q,4Q  ;12(8) = 10
 ;       C               HIGH NUMBER - MANTISSA
 ;       C+1             LOW NUMBER
 ;       C+2             CHARACTERISTIC
-;       C+3             DECIMAL EXPONEXT (SIGN & MAG.)
+;       C+3             DECIMAL EXPONENT (SIGN & MAG.)
 ;       C+4             TEN**N
 ;       C+5             TEN**N
 ;       C+6             TEN**N
@@ -1529,14 +1569,19 @@ TEN:    DB      240Q,0Q,0Q,4Q  ;12(8) = 10
 ;       C+11            DIGIT JUST INPUT (INPUT ONLY)
 ;
 ;
-;                       /*****BEGIN INPUT*************
+;       /*****BEGIN INPUT*************
 ;
 ;
 ;HRJ was:
 ;ERR:
-;         STC                     ;ERROR FLAG
-;          RET                     ;AND RETURN
+;       STC                     ;ERROR FLAG
+;       RET                     ;AND RETURN
 ; replaced with code in (PDF) document HRJ
+
+;
+;
+;   SUBROUTINE ERR
+;
 ERR:    MVI     A,277Q          ;ERROR IN INPUT
         CALL    OUTR            ;SEND A ?(SPACE)
         MVI     A,240Q          ;
@@ -1549,8 +1594,8 @@ ERR:    MVI     A,277Q          ;ERROR IN INPUT
 ;*******************************************************
 ;
 ;
-;                       /L POINTS TO WHERE TO PUT INPUT NUMBER
-;                       /C POINTS TO 13(10) WORDS OF SCRATCH
+;       /L POINTS TO WHERE TO PUT INPUT NUMBER
+;       /C POINTS TO 13(10) WORDS OF SCRATCH
 ;
 INPUT:  MOV     B,L             ;SAVE ADDRESS WHERE DATA IS TO GO
         MOV     A,C             ;IN SCRATCH
@@ -1585,7 +1630,7 @@ SCALE:  CALL    GETEX           ;GET DECIMAL EXP
         SUB     E               ;NOW ITS +
 APLS:   ADD     B               ;SIGN NUMBER
         MOV     M,A             ;SAVE EXP (SIGN & MAG.)
-        MVI     L,(TEN5 AND 377Q)  ;TRY MORD WITH 10**5 FIRST
+        MVI     L,TEN5 & 377Q   ;TRY MORD WITH 10**5 FIRST
         CALL    COPT            ;TRANSFER TO RAM
         CALL    GETEX           ;GET DECIMAL EXP
 INT5:   ANI     77Q             ;GET MAG. OF EXP
@@ -1595,7 +1640,7 @@ INT5:   ANI     77Q             ;GET MAG. OF EXP
         SUI     5Q              ;MAG = MAG -5
         MOV     M,A             ;UPDATE DEC. EXP IN MEM
         JMP     INT5            ;GO TRY AGAIN
-TRYTN:  MVI     L,(TEN AND 377Q)  ;PUT TEN IN RAM
+TRYTN:  MVI     L,TEN & 377Q    ;PUT TEN IN RAM
         CALL    COPT
         CALL    GETEX           ;SET UP FOR LOOP
 INT1:   ANI     77Q             ;GET MAGNITUDE
@@ -1634,7 +1679,7 @@ INEXP:  CALL    FLTSGN          ;FLOAT AND SIGN NUMBER
         INR     L               ;GET SIGN OF EXP
         MOV     A,M             ;INTO A
         ORA     A               ;SET FLOPS
-        MOV     A,B             ;INCASE NOTHING TO DO
+        MOV     A,B             ;IN CASE NOTHING TO DO
         JM      USEIT           ;IF NEG. USE AS +
         MVI     A,0Q            ;IF + MAKE -
         SUB     B               ;0-X = -X
@@ -1725,8 +1770,11 @@ ZROIT:  MOV     L,C             ;ZERO NUMBER
         INR     L               ;NOW SET SIGN TO +
         MOV     M,A
         RET                     ;DONE
+;
+;
 ; END of code from LLNL PDF document
 ;
+
 ;
 ; code below from CPMUG disk #2 version
 ;
@@ -1740,11 +1788,14 @@ DCOMP:   MOV    A,E
          CMP    B
          RET
 ; ROUTINE TO INPUT CHAR FROM TTY
-CHAR2:   PUSH   B
-         CALL   CONIN           ;INPUT FROM ODT
-         MOV    A,B             ;GET CHAR TO A REG.
-         POP    B               ;RESTORE B,C
+;CHAR2:  PUSH   B
+;        CALL   CONIN       ;INPUT FROM ODT
+;        MOV    A,B         ;GET CHAR TO A REG.
+;        POP    B           ;RESTORE B,C
+;        RET
+CHAR2:   CALL   RX0
          RET
+
 ; ROUTINE TO ADJUST VALUES OF BIN, FORWARD PNT. AND
 ; LINE LENGTH OF SOURCE LINE.  PASSED ADD OF TEMP VARIABLE
 ; CONTAINING ADD OF SOURCE LINE.
@@ -1779,12 +1830,12 @@ N1:      XTHL
          RET
 ; ROUTINE TO CHK FLAGS ON INPUT AND OUTPUT.
 ; PASSED FLAG VALUE IN REG B.
-MCHK:    PUSH   PSW
-MCHK1:   CALL   STATUS
-         ANA    B
-         JZ     MCHK1
-         POP    PSW
-         RET
+;MCHK:   PUSH   PSW
+;MCHK1:  CALL   STATUS
+;        ANA    B
+;        JZ     MCHK1
+;        POP    PSW
+;        RET
 ; MULTIPLICATION ROUTINE (ADD. VALUES)
 MULT:    MOV    E,M
          DCX    H
@@ -1818,31 +1869,35 @@ SHIFT:   MOV    A,C
          RAR
          MOV    B,A
          JMP    TOP
+;
+;
 ;LINKAGES TO FLOATING POINT ROUTINES
 ;###S
-        ORG	1774H
+;       .ORG	1774H
 FPTBL:
-;        ORG     113707Q
+;       .ORG     113707Q
 ;###E
-         JMP    NORM
-         JMP    FLOAT
-         JMP    WZER
-         JMP    LADD
-         JMP    LMUL
-         JMP    LDIV
-         JMP    LSUB
-         JMP    DFXL
-         JMP    LMCM
-         JMP    COPY
-         JMP    CVRT
-         JMP    INPUT
-         JMP    MULT
-         JMP    PTVAL
-         JMP    DCOMP
-         JMP    MCHK
-         JMP    CHAR2
-         JMP    INL
-         JMP    OUTL
+;       JMP     NORM
+;       JMP     FLOAT
+;       JMP     WZER
+;       JMP     LADD
+;       JMP     LMUL
+;       JMP     LDIV
+;       JMP     LSUB
+;       JMP     DFXL
+;       JMP     LMCM
+;       JMP     COPY
+;       JMP     CVRT
+;       JMP     INPUT
+;       JMP     MULT
+;       JMP     PTVAL
+;       JMP     DCOMP
+;       JMP     MCHK
+;       JMP     CHAR2
+;       JMP     INL
+;       JMP     OUTL
 
-         END
+
+
+        .END
 
