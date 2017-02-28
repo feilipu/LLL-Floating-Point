@@ -93,7 +93,7 @@ TEST:
 ;
 OUTR:
 	    ANI	    7FH             ;CLEAR HIGH BIT
-	    RST     1		        ;OUTPUT THE CHARACTER TO TX0
+	    RST     1               ;OUTPUT THE CHARACTER TO TX0
 	    RET
 
 ;
@@ -109,12 +109,12 @@ OUTR:
 ; IN B REGISTER.
 ;
 INP:
-        PUSH	PSW
-	    RST     2		        ;INPUT A CHARACTER FROM RX0
-	    ORI	    80H             ;SET HIGH BIT
-	    MOV	    B,A             ;MOVE TO B REGISTER
-	    POP	    PSW
-	    RET
+        PUSH    PSW
+        RST     2               ;INPUT A CHARACTER FROM RX0
+        ORI	    80H             ;SET HIGH BIT
+        MOV	    B,A             ;MOVE TO B REGISTER
+        POP     PSW
+        RET
 ;
 ;
 ;******************************************************
