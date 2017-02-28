@@ -86,23 +86,15 @@ TEST:
 ;       //// OUTPUT SUBROUTINES
 ;******************************************************
 ;
-OUTR:
-	PUSH	B		;SAVE REG B
-	MVI	B, 1		;PAD ONCE
-	CALL	PAD		;DO IT
-	POP	B		;RESTORE B AND RET
-	RET
 
-PAD:
-	PUSH	B		;SAVE THE COUNT AND C
-	MOV	C, A		;SAVE CHARACTER IN C
-P1:
-	RST	1		;OUTPUT THE CHARACTER TO TX0
-	DCR	B		;DECREMENT NUMB. CHARACTERS
-	MOV	A, C		;GET THE CHARACTER BACK
-	JNZ	P1		;GO TO P1 IF ANY CHARACTERS LEFT
-	POP	B		;RESTORE B AND C
-	RET			;TRANSMITTED CHARACTER STILL IN A
+;
+; OUTR OUTPUT FROM CVRT INTO TX0 OUTPUT BUFFER
+; ALL REG'S MAINTAINED
+;
+OUTR:
+	    ANI	    7FH             ;CLEAR HIGH BIT
+	    RST     1		        ;OUTPUT THE CHARACTER TO TX0
+	    RET
 
 ;
 ;
@@ -110,10 +102,19 @@ P1:
 ;       //// INPUT SUBROUTINES
 ;******************************************************
 ;
-INP:
-	RST	2		;INPUT A CHARACTER FROM RX0
-	RET			;RETURN
 
+;
+; ROUTINE TO INPUT CHAR FROM RX0
+; INP RETURNS CHARACTER WITH HIGH BIT SET
+; IN B REGISTER.
+;
+INP:
+        PUSH	PSW
+	    RST     2		        ;INPUT A CHARACTER FROM RX0
+	    ORI	    80H             ;SET HIGH BIT
+	    MOV	    B,A             ;MOVE TO B REGISTER
+	    POP	    PSW
+	    RET
 ;
 ;
 ;******************************************************
