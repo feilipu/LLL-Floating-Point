@@ -1,4 +1,3 @@
-; this version from CPMUG disk #2 - CP/M Users Group library
 ; original LLL code restored Herb Johnson Feb 2015
 ; original LLL code from "Floating Point Package for
 ; Intel 8008 and 8080 Microprocessors" by Maples Oct 24 1975
@@ -21,11 +20,8 @@
 ; //// FLOATING POINT PACKAGE FOR THE MCS8
 ; //// BY DAVID MEAD
 ; //// MODIFIED BY HAL BRAND 9/6/74
-; //// MODIFIED FOR 24 BIT MANTISSAS***********
+; //// MODIFIED FOR 24 BIT MANTISSAS
 ; //// PLUS ADDED I/O CONVERSION ROUTINES
-; //// NEW ROUTINE COMMENTS
-; //// ARE PRECEEDED BY /
-; //// OTHER CHANGES ARE NOTED BY **
 ; //// MODIFIED BY FRANK OLKEN 6/28/75
 ;
 ;
@@ -1774,130 +1770,5 @@ ZROIT:  MOV     L,C             ;ZERO NUMBER
 ;
 ; END of code from LLNL PDF document
 ;
-
-;
-; code below from CPMUG disk #2 version
-;
-
-; CONTAIN LOW BYTE OF TWO BYTE VALUE. RETURNS CY=1 IF
-; BC>DE, CY=0 IF BC<DE: Z=1 IF BC=DE.
-DCOMP:   MOV    A,E
-         CMP    C
-         RNZ
-         MOV    A,D
-         CMP    B
-         RET
-; ROUTINE TO INPUT CHAR FROM TTY
-;CHAR2:  PUSH   B
-;        CALL   CONIN       ;INPUT FROM ODT
-;        MOV    A,B         ;GET CHAR TO A REG.
-;        POP    B           ;RESTORE B,C
-;        RET
-CHAR2:   CALL   RX0
-         RET
-
-; ROUTINE TO ADJUST VALUES OF BIN, FORWARD PNT. AND
-; LINE LENGTH OF SOURCE LINE.  PASSED ADD OF TEMP VARIABLE
-; CONTAINING ADD OF SOURCE LINE.
-PTVAL:   PUSH   PSW
-         PUSH   D
-         PUSH   H
-         MVI    A,002
-         MOV    E,M
-         INR    L
-         MOV    D,M
-         INR    L
-         PUSH   D
-N1:      XTHL
-         MOV    E,M
-         INX    H
-         MOV    D,M
-         INX    H
-         XTHL
-         MOV    M,E
-         INR    L
-         MOV    M,D
-         INR    L
-         DCR    A
-         JNZ    N1
-         XTHL
-         MOV    D,M
-         POP    H
-         MOV    M,D
-         POP    H
-         POP    D
-         POP    PSW
-         RET
-; ROUTINE TO CHK FLAGS ON INPUT AND OUTPUT.
-; PASSED FLAG VALUE IN REG B.
-;MCHK:   PUSH   PSW
-;MCHK1:  CALL   STATUS
-;        ANA    B
-;        JZ     MCHK1
-;        POP    PSW
-;        RET
-; MULTIPLICATION ROUTINE (ADD. VALUES)
-MULT:    MOV    E,M
-         DCX    H
-         MOV    D,M
-         MVI    M,11H
-         MVI    B,0
-         MOV    C,B
-TOP:     MOV    A,E
-         RAR
-         MOV    E,A
-         MOV    A,D
-         RAR
-         DCR    M
-         MOV    D,A
-         RZ
-         JNC    SHIFT
-         DCX    H
-         DCX    H
-         MOV    A,B
-         ADD    M
-         MOV    B,A
-         INX    H
-         MOV    A,C
-         ADC    M
-         MOV    C,A
-         INX    H
-SHIFT:   MOV    A,C
-         RAR
-         MOV    C,A
-         MOV    A,B
-         RAR
-         MOV    B,A
-         JMP    TOP
-;
-;
-;LINKAGES TO FLOATING POINT ROUTINES
-;###S
-;       .ORG	1774H
-FPTBL:
-;       .ORG     113707Q
-;###E
-;       JMP     NORM
-;       JMP     FLOAT
-;       JMP     WZER
-;       JMP     LADD
-;       JMP     LMUL
-;       JMP     LDIV
-;       JMP     LSUB
-;       JMP     DFXL
-;       JMP     LMCM
-;       JMP     COPY
-;       JMP     CVRT
-;       JMP     INPUT
-;       JMP     MULT
-;       JMP     PTVAL
-;       JMP     DCOMP
-;       JMP     MCHK
-;       JMP     CHAR2
-;       JMP     INL
-;       JMP     OUTL
-
-
-
         .END
 
