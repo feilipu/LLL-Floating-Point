@@ -24,34 +24,6 @@
 ; //// PLUS ADDED I/O CONVERSION ROUTINES
 ; //// MODIFIED BY FRANK OLKEN 6/28/75
 ;
-;
-;###S
-;   EQUATES FOR RELOCATED PACKAGES
-;           .ORG	10DDH
-; INTERP:	.EQU	0100H
-; FPTBL:    .EQU	1774H
-; IOJUMP:   .EQU	1900H
-; CONIN:	.EQU	IOJUMP+4
-; STATUS:	.EQU	IOJUMP+0AH
-; INP:      .EQU	FPTBL+33H
-; OUTR:     .EQU	FPTBL+36H
-; OUTL:     .EQU	INTERP+7D9H
-; INL:      .EQU	INTERP+996H
-;           .ORG    110000Q
-
-;
-; CPM:      .EQU	5
-; CONIN     .EQU    404Q        ; JMP TABLE LOCATION OF CONSOLE INP.
-; STATUS    .EQU    412Q        ; JMP TABLE LOC. FOR STATUS PORT INPUT
-; OUTR      .EQU    113775Q     ;LINK TO BASIC
-; OUTL      .EQU    103726Q
-; INL       .EQU    104623Q
-; INP       .EQU    113772Q     ;LINK TO BASIC
-;###E
-
-;OUTR	.EQU     300Q            ;set to ODT's TTY routing
-;INP	.EQU     077Q
-
 
 ;       RC2014 Function Calls
 TX0        .EQU    00C9H
