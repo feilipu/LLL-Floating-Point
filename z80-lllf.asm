@@ -24,34 +24,37 @@
 ; //// PLUS ADDED I/O CONVERSION ROUTINES
 ; //// MODIFIED BY FRANK OLKEN 6/28/75
 ;
-
-;       RC2014 Function Calls
-TX0        .EQU    00C9H
-RX0        .EQU    009FH
-RX0_CHK    .EQU    0108H
-                                ; from Nascom Basic Symbol Tables
-DEINT      .EQU    0B57H        ; Function DEINT to get USR(x) into DE registers
-ABPASS     .EQU    12CCH        ; Function ABPASS to put output into AB register for return
-
-;       YAZ180 Function Calls
-;TX0       .EQU    016BH
-;RX0       .EQU    0154H
-;RX0_CHK   .EQU    01A9H
-                                ; from Nascom Basic Symbol Tables
-;DEINT     .EQU    0C3FH        ; Function DEINT to get USR(x) into DE registers
-;ABPASS    .EQU    13B4H        ; Function ABPASS to put output into AB register for return
- 
-OUTR	.EQU     TX0             ;set to RC2014/YAZ180 Serial TTY routing
-INP     .EQU     RX0
+;
+; Modified to run on the RC2014 and the YAZ180 by
+; Phillip Stevens @feilipu https://feilipu.me
+; February / March 2017
+;
+; RC2014 and YAZ180 have TX0 and RX0 and RX0_CHK located at RST jumps.
+;
+;TX0            RST 1
+;RX0            RST 2
+;RX0_CHK        RST 3
+;
 
 MINCH   .EQU    300Q             ;MINIMUM CHARACTERISTIC WITH SIGN EXTENDED
 MAXCH   .EQU    077Q             ;MAXIMUM CHARACTERISTIC WITH SIGN EXTENDED
+
 ;
 ;
 ;******************************************************
 ;       //// SIMPLE EXERCISE PROGRAM
 ;******************************************************
 ;
+
+                                ; RC2014 Function Calls from Nascom Basic Symbol Tables
+DEINT    .EQU    0B57H          ; Function DEINT to get USR(x) into DE registers
+ABPASS   .EQU    12CCH          ; Function ABPASS to put output into AB register for return
+
+                                ; YAZ180 Function Calls from Nascom Basic Symbol Tables
+;DEINT   .EQU    0C3FH          ; Function DEINT to get USR(x) into DE registers
+;ABPASS  .EQU    13B4H          ; Function ABPASS to put output into AB register for return
+
+
 SCRPG   .EQU    23H             ;SCRATCH PAGE IS 2300H
 OP1     .EQU    00H             ;STARTING LOCATION OF OPERAND 1
 OP2     .EQU    OP1+4           ;STARTING LOCATION OF OPERAND 2
@@ -76,6 +79,40 @@ TEST:
         MVI     C, SCR          ;SCRATCH AREA
         CALL    CVRT            ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
         JP      TEST            ;START AGAIN
+
+;
+;
+;******************************************************
+;       //// OUTPUT SUBROUTINES
+;******************************************************
+;
+OUTR:
+	PUSH	B		;SAVE REG B
+	MVI	B, 1		;PAD ONCE
+	CALL	PAD		;DO IT
+	POP	B		;RESTORE B AND RET
+	RET
+
+PAD:
+	PUSH	B		;SAVE THE COUNT AND C
+	MOV	C, A		;SAVE CHARACTER IN C
+P1:
+	RST	1		;OUTPUT THE CHARACTER TO TX0
+	DCR	B		;DECREMENT NUMB. CHARACTERS
+	MOV	A, C		;GET THE CHARACTER BACK
+	JNZ	P1		;GO TO P1 IF ANY CHARACTERS LEFT
+	POP	B		;RESTORE B AND C
+	RET			;TRANSMITTED CHARACTER STILL IN A
+
+;
+;
+;******************************************************
+;       //// INPUT SUBROUTINES
+;******************************************************
+;
+INP:
+	RST	2		;INPUT A CHARACTER FROM RX0
+	RET			;RETURN
 
 ;
 ;
