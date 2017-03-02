@@ -1,4 +1,5 @@
 ; original LLL code restored Herb Johnson Feb 2015
+;
 ; original LLL code from "Floating Point Package for
 ; Intel 8008 and 8080 Microprocessors" by Maples Oct 24 1975
 ; URCL-51940 publication from Lawrence Livermore Laboratory
@@ -29,12 +30,6 @@
 ; Phillip Stevens @feilipu https://feilipu.me
 ; February / March 2017
 ;
-; RC2014 and YAZ180 have TX0 and RX0 and RX0_CHK located at RST jumps.
-;
-;TX0            RST 1           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
-;RX0            RST 2           ;RETURN RX CHARACTER IN A, BLOCKING
-;RX0_CHK        RST 3           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
-;
 
 MINCH   .EQU    300Q            ;MINIMUM CHARACTERISTIC WITH SIGN EXTENDED
 MAXCH   .EQU    077Q            ;MAXIMUM CHARACTERISTIC WITH SIGN EXTENDED
@@ -42,17 +37,36 @@ MAXCH   .EQU    077Q            ;MAXIMUM CHARACTERISTIC WITH SIGN EXTENDED
 ;
 ;
 ;******************************************************
+;       //// RC2014 & YAZ180 DEFINES
+;******************************************************
+;
+; RC2014 and YAZ180 have TX0 and RX0 and RX0_CHK located at RST jumps.
+;
+;TX0            RST 1           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
+;RX0            RST 2           ;RETURN RX CHARACTER IN A, BLOCKING
+;RX0_CHK        RST 3           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
+;
+                                ;RC2014 Function Calls from Nascom Basic Symbol Tables
+TXA     .EQU    00C9H           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
+RXA     .EQU    009FH           ;RETURN RX CHARACTER IN A, BLOCKING
+RXA_CHK .EQU    0108H           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
+
+DEINT   .EQU    0B57H           ;Function DEINT to get USR(x) into DE registers
+ABPASS  .EQU    12CCH           ;Function ABPASS to put output into AB register for return
+
+                                ;YAZ180 Function Calls from Nascom Basic Symbol Tables
+
+;DEINT   .EQU    0C3FH          ;Function DEINT to get USR(x) into DE registers
+;ABPASS  .EQU    13B4H          ;Function ABPASS to put output into AB register for return
+
+CR      .EQU    0DH             ;CARRIAGE RETURN
+LF      .EQU    0AH             ;LINEFEED
+
+;
+;******************************************************
 ;       //// SIMPLE EXERCISE PROGRAM
 ;******************************************************
 ;
-
-                                ;RC2014 Function Calls from Nascom Basic Symbol Tables
-DEINT    .EQU    0B57H          ;Function DEINT to get USR(x) into DE registers
-ABPASS   .EQU    12CCH          ;Function ABPASS to put output into AB register for return
-
-                                ;YAZ180 Function Calls from Nascom Basic Symbol Tables
-;DEINT   .EQU    0C3FH          ;Function DEINT to get USR(x) into DE registers
-;ABPASS  .EQU    13B4H          ;Function ABPASS to put output into AB register for return
 
 
 SCRPG   .EQU    23H             ;SCRATCH PAGE IS 2300H
@@ -61,16 +75,40 @@ OP2     .EQU    OP1+4           ;STARTING LOCATION OF OPERAND 2
 RSULT   .EQU    OP2+4           ;STARTING LOCATION OF RESULT
 SCR     .EQU    RSULT+4         ;STARTING LOCATION OF SCRATCH AREA
 
+
+
         .ORG    3000H           ;ORIGIN FOR RC2014 AND YAZ180 DURING TESTING
         
+HELLO:
+        .BYTE "LLL Float Lib",CR,LF,0
+        
 TEST:
+
+        LXI     H, HELLO        ;LOAD HL ADDRESS OF HELLO
+        CALL    PRINT           ;PRINT IT
+
         MVI     H, SCRPG        ;SET H REGISTER TO RAM SCRATCH PAGE
         MVI     L, OP1          ;POINTER TO OPERAND 1
         MVI     C, SCR          ;SCRATCH AREA
+
+        CALL    PRINT_DBG       ;PRINT 4 BYTES                  #DEBUG
+        
+        MVI     H, SCRPG        ;SET H REGISTER TO RAM SCRATCH PAGE
+        MVI     L, OP1          ;POINTER TO OPERAND 1
+        MVI     C, SCR          ;SCRATCH AREA
+
         CALL    INPUT           ;INPUT OPERAND 1 FROM TTY
+
+        CALL    PRINT_DBG       ;PRINT 4 BYTES                  #DEBUG
+        
+HANG:
+        JMP     HANG
+
+        MVI     H, SCRPG        ;SET H REGISTER TO RAM SCRATCH PAGE
         MVI     L, OP2          ;POINTER TO OPERAND 2
         MVI     C, SCR          ;SCRATCH AREA
         CALL    INPUT           ;INPUT OPERAND 2 FROM TTY
+
         MVI     L, OP1          ;OPERAND 1 POINTER IN (H)L
         MVI     B, OP2          ;OPERAND 2 POINTER IN (H)B
         MVI     C, RSULT        ;RESULT TO (H)C POINTER
@@ -78,7 +116,7 @@ TEST:
         MVI     L, RSULT        ;(H)L POINTER NOW RSULT
         MVI     C, SCR          ;SCRATCH AREA
         CALL    CVRT            ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
-        JP      TEST            ;START AGAIN
+        JMP     TEST            ;START AGAIN
 
 ;
 ;
@@ -96,16 +134,40 @@ OUTR:
         RST     1               ;OUTPUT THE CHARACTER TO TX0
         RET
 
-
 PRINT:
-        MOV     A, M            ;Get character
+        MOV     A, M            ;Get character from HL
         ORA     A               ;Is it $00 ?
         RZ                      ;Then RETurn on terminator
-        RST     1               ;Print it
-        INR     M               ;Next Character
-        JP      PRINT           ;Continue until $00
-        RET
+        CALL    TXA             ;PRINT IT
+        INX     H               ;Point to next character 
+        JMP     PRINT           ;Continue until $00
 
+PRINT_DBG:                      ;PRINTS 4 CHAR FROM ADDRESS IN HL - LITTLE ENDED
+        PUSH    PSW     
+        INX     H               ;Point to last character
+        INX     H
+        INX     H
+        MOV     A, M            ;GET THE CHARACTER INPUT
+        ANI     $7F             ;REMOVE 0x80
+        CALL    TXA             ;PRINT IT
+        DCX     H
+        MOV     A, M            ;GET THE CHARACTER INPUT
+        ANI     $7F             ;REMOVE 0x80
+        CALL    TXA             ;PRINT IT
+        DCX     H
+        MOV     A, M            ;GET THE CHARACTER INPUT
+        ANI     $7F             ;REMOVE 0x80
+        CALL    TXA             ;PRINT IT
+        DCX     H
+        MOV     A, M            ;GET THE CHARACTER INPUT
+        ANI     $7F             ;REMOVE 0x80
+        CALL    TXA             ;PRINT IT
+        MVI     A,CR            ;CARRIAGE RETURN
+        CALL    TXA             ;PRINT IT
+        MVI     A,LF            ;NEWLINE
+        CALL    TXA             ;PRINT IT & RETurn
+        POP     PSW
+        RET
 
 ;
 ;
@@ -115,16 +177,14 @@ PRINT:
 ;
 
 ;
-; ROUTINE TO INPUT CHAR FROM RX0
+; ROUTINE TO INPUT CHAR FROM RXA INPUT BUFFER
+; RXA LOOPS TILL A CHARACTER IS AVAILABLE
 ; INP RETURNS CHARACTER WITH HIGH BIT SET
-; IN B REGISTER.
+; IN REGISTER A.
 ;
 INP:
-        PUSH    PSW
-        RST     2               ;INPUT A CHARACTER FROM RX0
+        CALL    RXA             ;INPUT A CHARACTER FROM RX0
         ORI     80H             ;SET HIGH BIT
-        MOV     B, A            ;MOVE TO B REGISTER
-        POP     PSW
         RET
 
 ;
