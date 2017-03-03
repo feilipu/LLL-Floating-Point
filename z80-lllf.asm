@@ -63,12 +63,12 @@ CR      .EQU    0DH             ;CARRIAGE RETURN
 LF      .EQU    0AH             ;LINEFEED
 
 ;
+;
 ;******************************************************
 ;       //// SIMPLE EXERCISE PROGRAM
 ;******************************************************
 ;
-
-
+;
 SCRPG   .EQU    23H             ;SCRATCH PAGE IS 2300H
 OP1     .EQU    00H             ;STARTING LOCATION OF OPERAND 1
 OP2     .EQU    OP1+4           ;STARTING LOCATION OF OPERAND 2
@@ -76,14 +76,9 @@ RSULT   .EQU    OP2+4           ;STARTING LOCATION OF RESULT
 SCR     .EQU    RSULT+4         ;STARTING LOCATION OF SCRATCH AREA
 
 
-
         .ORG    3000H           ;ORIGIN FOR RC2014 AND YAZ180 DURING TESTING
-        
-HELLO:
-        .BYTE "LLL Float Lib",CR,LF,0
-        
-TEST:
 
+TEST:
         LXI     H, HELLO        ;LOAD HL ADDRESS OF HELLO
         CALL    PRINT           ;PRINT IT
 
@@ -91,47 +86,55 @@ TEST:
         MVI     L, OP1          ;POINTER TO OPERAND 1
         MVI     C, SCR          ;SCRATCH AREA
 
-        CALL    PRINT_DBG       ;PRINT 4 BYTES                  #DEBUG
-        
-        MVI     H, SCRPG        ;SET H REGISTER TO RAM SCRATCH PAGE
-        MVI     L, OP1          ;POINTER TO OPERAND 1
-        MVI     C, SCR          ;SCRATCH AREA
-
         CALL    INPUT           ;INPUT OPERAND 1 FROM TTY
 
-        CALL    PRINT_DBG       ;PRINT 4 BYTES                  #DEBUG
-        
-HANG:
-        JMP     HANG
+                                ;EXAMPLE CODE - TWO OPERAND INPUT
 
-        MVI     H, SCRPG        ;SET H REGISTER TO RAM SCRATCH PAGE
-        MVI     L, OP2          ;POINTER TO OPERAND 2
-        MVI     C, SCR          ;SCRATCH AREA
-        CALL    INPUT           ;INPUT OPERAND 2 FROM TTY
+;        MVI     H, SCRPG        ;SET H REGISTER TO RAM SCRATCH PAGE
+;        MVI     L, OP2          ;POINTER TO OPERAND 2
+;        MVI     C, SCR          ;SCRATCH AREA
+
+;        CALL    INPUT           ;INPUT OPERAND 2 FROM TTY
+
+;        MVI     L, OP1          ;OPERAND 1 POINTER IN (H)L
+;        MVI     B, OP2          ;OPERAND 2 POINTER IN (H)B
+;        MVI     C, RSULT        ;RESULT TO (H)C POINTER
+
+;        CALL    LDIV            ;DIVIDE OP1 BY OP2 AND PLACE RESULT IN RSULT
+;        CALL    LMUL            ;MULTIPLY OP1 BY OP2 AND PLACE RESULT IN RSULT
+
+                                ;EXAMPLE CODE - ONE OPERAND INPUT
 
         MVI     L, OP1          ;OPERAND 1 POINTER IN (H)L
-        MVI     B, OP2          ;OPERAND 2 POINTER IN (H)B
-        MVI     C, RSULT        ;RESULT TO (H)C POINTER
-        CALL    LDIV            ;DIVIDE OP1 BY OP2 AN PLACE RESULT IN RSULT
+        MVI     B, RSULT        ;RESULT TO (H)B POINTER
+        MVI     C, SCR          ;SCRATCH AREA
+
+        CALL    DSQRT           ;SQUARE ROOT OF OP1 AND PLACE RESULT IN RSULT
+
+                                ;EXAMPLE CODE - OUTPUT
+
         MVI     L, RSULT        ;(H)L POINTER NOW RSULT
         MVI     C, SCR          ;SCRATCH AREA
+
         CALL    CVRT            ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
+        
         JMP     TEST            ;START AGAIN
 
+HELLO:
+        .BYTE   CR,LF
+        .BYTE   "LLL Float ",0
 ;
 ;
 ;******************************************************
 ;       //// OUTPUT SUBROUTINES
 ;******************************************************
 ;
-
-;
 ; OUTR OUTPUT FROM CVRT INTO TX0 OUTPUT BUFFER
 ; ALL REG'S MAINTAINED
 ;
 OUTR:
         ANI     7FH             ;CLEAR HIGH BIT
-        RST     1               ;OUTPUT THE CHARACTER TO TX0
+        CALL    TXA             ;OUTPUT THE CHARACTER TO TXA
         RET
 
 PRINT:
@@ -141,52 +144,44 @@ PRINT:
         CALL    TXA             ;PRINT IT
         INX     H               ;Point to next character 
         JMP     PRINT           ;Continue until $00
-
-PRINT_DBG:                      ;PRINTS 4 CHAR FROM ADDRESS IN HL - LITTLE ENDED
-        PUSH    PSW     
-        INX     H               ;Point to last character
-        INX     H
-        INX     H
-        MOV     A, M            ;GET THE CHARACTER INPUT
-        ANI     $7F             ;REMOVE 0x80
-        CALL    TXA             ;PRINT IT
-        DCX     H
-        MOV     A, M            ;GET THE CHARACTER INPUT
-        ANI     $7F             ;REMOVE 0x80
-        CALL    TXA             ;PRINT IT
-        DCX     H
-        MOV     A, M            ;GET THE CHARACTER INPUT
-        ANI     $7F             ;REMOVE 0x80
-        CALL    TXA             ;PRINT IT
-        DCX     H
-        MOV     A, M            ;GET THE CHARACTER INPUT
-        ANI     $7F             ;REMOVE 0x80
-        CALL    TXA             ;PRINT IT
-        MVI     A,CR            ;CARRIAGE RETURN
-        CALL    TXA             ;PRINT IT
-        MVI     A,LF            ;NEWLINE
-        CALL    TXA             ;PRINT IT & RETurn
-        POP     PSW
-        RET
-
 ;
 ;
 ;******************************************************
 ;       //// INPUT SUBROUTINES
 ;******************************************************
 ;
-
-;
 ; ROUTINE TO INPUT CHAR FROM RXA INPUT BUFFER
 ; RXA LOOPS TILL A CHARACTER IS AVAILABLE
 ; INP RETURNS CHARACTER WITH HIGH BIT SET
 ; IN REGISTER A.
 ;
+; ROUTINE PASSES SPACE IF THE INPUT IS NOT A NUMBER.
+; NUMERICAL CHARACTERS INCLUDE 0 - 9, +, -, AND E.
+;
+; ROUTINE ECHOS THE CHARACTERS FORWARDED
+;
 INP:
         CALL    RXA             ;INPUT A CHARACTER FROM RX0
+        CPI     '+'             ;+?
+        JZ      INP_DONE
+        CPI     '-'             ;-?
+        JZ      INP_DONE
+        CPI     '.'             ;DEC. PNT.?           
+        JZ      INP_DONE
+        CPI     'E'             ;E?
+        JZ      INP_DONE
+        CPI     '0'             ;ASCII CNTRL.?
+        JM      SPACE
+        CPI     ':'             ;DECIMAL NUMBER?
+        JM      INP_DONE
+SPACE:
+        MVI     A, ' '          ;SEND A SPACE
+INP_DONE:
+        PUSH    PSW
+        CALL    TXA
+        POP     PSW
         ORI     80H             ;SET HIGH BIT
         RET
-
 ;
 ;
 ;******************************************************
@@ -1437,7 +1432,7 @@ AGN4:
         MOV     C,A             ;INMTRL REG 3
         CALL    LMUL
         MOV     A,C
-        SUI     10Q             ;COPY .ORG INTO
+        SUI     10Q             ;COPY ORG INTO
         MOV     C,A             ;INTRL REG 1
         SUI     2
         MOV     L,A
@@ -1843,8 +1838,8 @@ INPUT:
         INR     C               ;OFFSET SCRATCH POINTER
         INR     C               ;BY 2
 PRMT:
-        MVI     A,272Q          ;PROMPT USER WITH : HRJ added
-        CALL    OUTR            ;OUTPUT HRJ added
+        MVI     A,272Q          ;PROMPT USER WITH :
+        CALL    OUTR            ;OUTPUT :
         CALL    ZROIT           ;ZERO NUMBER
         INR     L               ;AND ZERO
         MOV     M,A             ;DECIMAL EXPONENT
