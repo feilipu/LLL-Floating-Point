@@ -1,11 +1,10 @@
 
-[SOURCED FROM HERB'S STUFF](http://www.retrotechnology.com/herbs_stuff/float.html)
+[ORIGINALLY SOURCED FROM HERB'S STUFF](http://www.retrotechnology.com/herbs_stuff/float.html)
 
 
 #Lawrence Livermore Floating point packages for the 8008 and 8080
 
-Lawrence Livermore (National) Labs produced an 8080 floating point package in **1975**, based on 8008 code. Versions became available in the CP/M community and in Dr Dobb's Journal and in an IEEE publication; but they were incomplete. These programs as corrected are now available here on Herb's site. He also added discussion and information about another 8080 floating point package from the 1970'2, and discussion of early floating point chips, now often called *math coprocessors*. [Web page](http://www.retrotechnology.com/herbs_stuff/float.html) and archive built by Herb Johnson.
-Last updated Feb 13 2015.
+Following two years of use, in **1975**, Lawrence Livermore (National) Labs released an 8008 and 8080 floating point package, based on 8008 code they had obtained in **1973**. Versions became available in the CP/M community and in Dr Dobb's Journal and in an IEEE publication; but they were incomplete. These programs as corrected are now available on [Herb's site](http://www.retrotechnology.com/herbs_stuff/float.html). He also added discussion and information about another 8080 floating point package from the late 1970's, and discussion of early floating point chips, now often called *math coprocessors*, such as the AMD 9511A.
 
 # Lawrence Livermore (National) Labs Floating Point
 
@@ -25,15 +24,15 @@ In **1977**, a version was published in Dr. Dobb's Journal in Jan. 1977. There w
 
 **1980's**: A version of the code was offered on CPMUG disks #2 and disk #10; as part of LLL *floating point BASIC*. Files and folders with the contents of those disks, can be obtained from the retroarchive Web site as CPMUG010.ARK and CPMUG002.ARK. They should also be on archives or images of the Walnut Creek CP/M CD-ROM, found on many Web CP/M archive sites. Of course *010* is code from disk #10, and *002* from disk #2. These archives DO NOT INCLUDE THE SQUARE ROOT ROUTINE which is in the original document and PDF. The code submitted for disk #2 includes simple CP/M I/O code; for disk #10 that additional code includes CP/M file system support. There's few changes to the LLL code.
 
-**Sept 2006**: Emmanuel Roche, AKA *French Luser*, led a discussion in com.os.cpm (an old Usenet CP/M email discussion group) about 8080 floating point code. Roche posted part of the LLL document text but not the code of the document. Later, Roche provided privately to me his version of the source code, with square root code included, and more commentary.
+**Sept 2006**: Emmanuel Roche, AKA *French Luser*, led a discussion in com.os.cpm (an old Usenet CP/M email discussion group) about 8080 floating point code. Roche posted part of the LLL document text but not the code of the document. Later, Roche privately provided his version of the source code to Herb, with square root code included, and more commentary.
 
-For some time, this Web page carried multiple versions of the source and discussion about difference. In **2015**, Herb simply took the CPMUG #2 code and produced a version which 1) is verified against the LLL documented version and 2) includes the simple CP/M code from disk #2 as cited above. My thanks to Bill Beech; we took turns editing and assembling the source, and comparing the octal produced against the octal-based listing in the LLL document.
+For some time, Herb's Web page carried multiple versions of the source and discussion about differences. In **2015**, Herb simply took the CPMUG #2 code and produced a version which 1) is verified against the LLL documented version and 2) includes the simple CP/M code from disk #2 as cited above. Herb thanks Bill Beech, as they took turns editing and assembling the source, and comparing the octal produced against the octal-based listing in the LLL document.
 
 [Here's the 8080 ASM source for the Lawrence Livermore 1975 floating point package](http://www.retrotechnology.com/herbs_stuff/lll_float_8080_clean.asm). Additional code added in the CPMUG disk #2 is noted. [Here's an octal-based 8080 listing of that code](http://www.retrotechnology.com/herbs_stuff/lll_float_8080_beech.lst), which can be compared to the octal listing. The assembly is courtesy of Bill Beech and his 8080 cross assembler.
 
-Note the title of the LLL document is *8008 and 8080....*. The 8080 code they provided is code compatible with Intel's 8008 mnemonics as revised by them around 1975. Here's an 8008 assembly listing of almost the same LLL code. The differences are that decimal constants in the 8080 source were appended with *D*, so that the assembler would not assume they were octal. Assembly errors in this listing are due to the added CP/M code. As of this date, the resulting 8008 code has not been tested on an 8008 simulator or physical computer. Thanks again to Bill Beech for some of this work and his commentary.
+Note the title of the LLL document is *8008 and 8080....*. The 8080 code they provided is code compatible with Intel's 8008 mnemonics as revised by them around 1975. Here's an [8008 assembly listing](http://www.retrotechnology.com/herbs_stuff/lll_float_8008_beech.lst) of almost the same LLL code. The differences are that decimal constants in the 8080 source were appended with *D*, so that the assembler would not assume they were octal. Assembly errors in this listing are due to the added CP/M code. As of this date, the resulting 8008 code has not been tested on an 8008 simulator or physical computer. Thanks again to Bill Beech for some of this work and his commentary.
 
 # This Project for RC2014 & YAZ180
 
-**2017**: Building this code to work on the [RC2014](http://rc2014.co.uk) and on the [YAZ180](https://feilipu.me/2016/05/23/another-z80-project/) platforms. Mainly to enable me to test against the Am9511A-1 APU device.
+**2017**: Building this code to work on the [RC2014](http://rc2014.co.uk) and on the [YAZ180](https://feilipu.me/2016/05/23/another-z80-project/) platforms. Mainly to enable me to test against the [Am9511A-1 APU](https://feilipu.me/2017/02/22/characterising-am9511a-1-apu/) device.
 
