@@ -26,6 +26,9 @@
 ; //// MODIFIED BY FRANK OLKEN 6/28/75
 ;
 ;
+; Transcribed to Z80 mnemonics by the z88dk/support/8080/toZ80.awk tool.
+; gawk -f toZ80.awk < 80_lllf.asm > z80_lllf.asm
+;
 ; Modified to run on the RC2014 and the YAZ180 by
 ; Phillip Stevens @feilipu https://feilipu.me
 ; February / March 2017
@@ -87,7 +90,7 @@ SCR     .EQU    RSULT+4         ;STARTING LOCATION OF SCRATCH AREA
         .ORG    3000H           ;ORIGIN FOR RC2014 AND YAZ180 DURING TESTING
 
 TEST:
-        LD     HL, HELLO        ;LOAD HL ADDRESS OF HELLO
+        LD      HL, HELLO       ;LOAD HL ADDRESS OF HELLO
         CALL    PRINT           ;PRINT IT
 
         LD      H, SCRPG        ;SET H REGISTER TO RAM SCRATCH PAGE
@@ -98,15 +101,15 @@ TEST:
 
                                 ;EXAMPLE CODE - TWO OPERAND INPUT
 
-;        MVI     H, SCRPG        ;SET H REGISTER TO RAM SCRATCH PAGE
-;        MVI     L, OP2          ;POINTER TO OPERAND 2
-;        MVI     C, SCR          ;SCRATCH AREA
+;        LD      H, SCRPG        ;SET H REGISTER TO RAM SCRATCH PAGE
+;        LD      L, OP2          ;POINTER TO OPERAND 2
+;        LD      C, SCR          ;SCRATCH AREA
 
 ;        CALL    INPUT           ;INPUT OPERAND 2 FROM TTY
 
-;        MVI     L, OP1          ;OPERAND 1 POINTER IN (H)L
-;        MVI     B, OP2          ;OPERAND 2 POINTER IN (H)B
-;        MVI     C, RSULT        ;RESULT TO (H)C POINTER
+;        LD      L, OP1          ;OPERAND 1 POINTER IN (H)L
+;        LD      B, OP2          ;OPERAND 2 POINTER IN (H)B
+;        LD      C, RSULT        ;RESULT TO (H)C POINTER
 
 ;        CALL    LDIV            ;DIVIDE OP1 BY OP2 AND PLACE RESULT IN RSULT
 ;        CALL    LMUL            ;MULTIPLY OP1 BY OP2 AND PLACE RESULT IN RSULT
@@ -126,7 +129,7 @@ TEST:
 
         CALL    CVRT            ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
         
-        JP     TEST            ;START AGAIN
+        JP     TEST             ;START AGAIN
 
 HELLO:
         .BYTE   CR,LF
@@ -146,12 +149,12 @@ OUTR:
         RET
 
 PRINT:
-        LD      A,(HL)         ;Get character from HL
-        OR     A               ;Is it $00 ?
-        RET	Z                      ;Then RETurn on terminator
+        LD      A,(HL)          ;Get character from HL
+        OR      A               ;Is it $00 ?
+        RET     Z               ;Then RETurn on terminator
         CALL    TXA             ;PRINT IT
-        INC     HL               ;Point to next character 
-        JP     PRINT           ;Continue until $00
+        INC     HL              ;Point to next character 
+        JP      PRINT           ;Continue until $00
 ;
 ;
 ;******************************************************
@@ -170,25 +173,25 @@ PRINT:
 ;
 INP:
         CALL    RXA             ;INPUT A CHARACTER FROM RX0
-        CP     '+'             ;+?
-        JP	Z,INP_DONE
-        CP     '-'             ;-?
-        JP	Z,INP_DONE
-        CP     '.'             ;DEC. PNT.?           
-        JP	Z,INP_DONE
-        CP     'E'             ;E?
-        JP	Z,INP_DONE
-        CP     '0'             ;ASCII CNTRL.?
-        JP	M,SPACE
-        CP     ':'             ;DECIMAL NUMBER?
-        JP	M,INP_DONE
+        CP      '+'             ;+?
+        JP      Z, INP_DONE
+        CP      '-'             ;-?
+        JP      Z, INP_DONE
+        CP      '.'             ;DEC. PNT.?           
+        JP      Z, INP_DONE
+        CP      'E'             ;E?
+        JP      Z, INP_DONE
+        CP      '0'             ;ASCII CNTRL.?
+        JP      M, SPACE
+        CP      ':'             ;DECIMAL NUMBER?
+        JP      M, INP_DONE
 SPACE:
         LD      A, ' '          ;SEND A SPACE
 INP_DONE:
         PUSH    AF
         CALL    TXA
         POP     AF
-        OR     80H             ;SET HIGH BIT
+        OR      80H             ;SET HIGH BIT
         RET
 ;
 ;
