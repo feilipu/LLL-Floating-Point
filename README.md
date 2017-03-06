@@ -36,3 +36,6 @@ Note the title of the LLL document is *8008 and 8080....*. The 8080 code they pr
 
 **2017**: Building this code to work on the [RC2014](http://rc2014.co.uk) and on the [YAZ180](https://feilipu.me/2016/05/23/another-z80-project/) platforms. Mainly to enable me to test against the [Am9511A-1 APU](https://feilipu.me/2017/02/22/characterising-am9511a-1-apu/) device.
 
+To enable the code to be integrated into Z80 targets, sadly, the library has been translated into Z80 mnemonics.
+The tool used was the [z88dk 8080->Z80 awk tool](https://github.com/z88dk/z88dk/tree/master/support/8080). The translation was [almost perfect](https://github.com/feilipu/LLL-Floating-Point/commit/b30d59f84afe3667187d0e9c5634b93ae3c00ed0).
+
