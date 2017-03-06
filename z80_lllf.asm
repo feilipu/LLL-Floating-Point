@@ -129,8 +129,8 @@ TEST:
         JP     TEST            ;START AGAIN
 
 HELLO:
-        DEFB   CR,LF
-        DEFB   "LLL Float ",0
+        .BYTE   CR,LF
+        .BYTE   "LLL Float ",0
 ;
 ;
 ;******************************************************
@@ -146,7 +146,7 @@ OUTR:
         RET
 
 PRINT:
-        LD      A, M            ;Get character from HL
+        LD      A,(HL)         ;Get character from HL
         OR     A               ;Is it $00 ?
         RET	Z                      ;Then RETurn on terminator
         CALL    TXA             ;PRINT IT
@@ -752,14 +752,14 @@ DSUB:
         LD      A,(HL)             ;/GET LOW OF LOP
         LD      L,B             ;/SET TO BOP
         INC     L               ;/SET TO BOP LOW
-        SBC     (HL)               ;/GET DIFF. OF LOWS
+        SBC     A,(HL)               ;/GET DIFF. OF LOWS
         LD      L,E             ;/SAVE IN LOP LOW
         INC     L               ;/TO LOP LOW
         LD      (HL),A             ;/INTO RAM
         DEC     L               ;/BACK UP TO LOP HIGH
         LD      A,(HL)             ;/GET LOP HIGH
         LD      L,B             ;/SET TO BOP HIGH
-        SBC     (HL)               ;/SUB. WITH CARRY
+        SBC     A,(HL)               ;/SUB. WITH CARRY
         LD      L,E             ;/SAVE IN LOP HIGH
         LD      (HL),A             ;/INTO RAM
         RET                     ;/ALL DONE - MUCH SHORTER
