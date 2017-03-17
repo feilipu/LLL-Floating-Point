@@ -34,8 +34,8 @@
 ; February / March 2017
 ;
 
-MINCH   .EQU    300Q            ;MINIMUM CHARACTERISTIC WITH SIGN EXTENDED
-MAXCH   .EQU    077Q            ;MAXIMUM CHARACTERISTIC WITH SIGN EXTENDED
+MINCH   .EQU    300Q            ;MINIMUM EXPONENT WITH SIGN EXTENDED
+MAXCH   .EQU    077Q            ;MAXIMUM EXPONENT WITH SIGN EXTENDED
 
 ;
 ;
@@ -69,7 +69,6 @@ RXA_CHK .EQU    01A9H           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN 
 
 DEINT   .EQU    0C3FH           ;Function DEINT to get (IX+USR) into DE registers
 ABPASS  .EQU    13B4H           ;Function ABPASS to put output into AB register for return
-
 
 INT0_FPU    .EQU     $3800      ; start of the FPU Interrupt 1 asm code (RAM)
 
@@ -254,7 +253,7 @@ GOON:
         CALL    DLST            ;SHIFT QUOTIENT LEFT
         LD      C,L
         LD      L,E
-        CALL    LDCP            ;COMPUTE THE CHARACTERISTIC OF RESULT
+        CALL    LDCP            ;COMPUTE THE EXPONENT OF RESULT
         RET
 
 CRIN:
@@ -263,7 +262,7 @@ CRIN:
         CP      177Q            ;CHECK MAX POSITIVE NUMBER
         JP      Z,OFLWC         ;JUMP ON OVERFLOW
         ADD     A,1             ;ADD 1 SINCE WE DID NOT LEFTSHIFT
-        CALL    CCHK            ;CHECK AND STORE CHARACTERISTIC
+        CALL    CCHK            ;CHECK AND STORE EXPONENT
         RET                     ;RETURN
 ;
 ;
@@ -372,7 +371,7 @@ SUBZ:
         LD      L,E
         JP      NORM            ;NORMALIZE RESULT AND RETURN
 ;
-;   COPY THE LARGER CHARACTERISTIC TO THE RESULT
+;   COPY THE LARGER EXPONENT TO THE RESULT
 ;
 ADDZ:
         CALL    CCMP            ;COMPARE THE CHARACTERISTICS
@@ -384,7 +383,7 @@ ADD2:
         CALL    DADD            ;ADD MANTISSAS
         JP      NC,SCCFG        ;IF THERE IS NO OVFLW - DONE
         CALL    DRST            ;IF OVERFLOW SHIFT RIGHT
-        CALL    INCR            ;AND INCREMENT CHARACTERISTIC
+        CALL    INCR            ;AND INCREMENT EXPONENT
         RET                     ;ALL DONE, SO RETURN
 ;
 ;   THIS ROUTINE STORES THE MANTISSA SIGN IN THE RESULT
@@ -535,7 +534,7 @@ INTR:
         CP      200Q            ;CHECK FOR SMALLEST NEGATIVE NUMBER
         JP      Z,UFLWC         ;IF SO THEN UNDERFLOW
         SUB     1               ;SUBTRACT 1 TO COMPENSATE FOR NORMALIZE
-        CALL    CCHK            ;CHECK CHARACTERISTIC AND STORE IT
+        CALL    CCHK            ;CHECK EXPONENT AND STORE IT
         RET                     ;RETURN
 
 MADD:
@@ -585,16 +584,16 @@ REP6:
         OR      A               ;SET FLAGS
         JP      M,SCHAR           ;IF MOST SIGNIFICANT BIT = 1 THEN
                                 ;NUMBER IS NORMALIZED AND WE GO TO
-                                ;STORE THE CHARACTERISTIC
+                                ;STORE THE EXPONENT
         LD      A,D             ;OTHERWISE CHECK FOR UNDERFLOW
         CP      MINCH           ;COMPARE WITH MINIMUM CHAR
         JP      Z,WUND          ;IF EQUAL THEN UNDERFLOW
         CALL    DLST            ;SHIFT MANTISSA LEFT
-        DEC     D               ;DECREMENT CHARACTERISTIC
+        DEC     D               ;DECREMENT EXPONENT
         JP      REP6            ;LOOP AN TEST NEXT BIT
 
 SCHAR:
-        JP      INCR3           ;STORE THE CHARACTERISTIC USING
+        JP      INCR3           ;STORE THE EXPONENT USING
                                 ;THE SAME CODE AS THE INCREMENT
 
 DFXL:
@@ -610,7 +609,7 @@ DFXL:
 FLOAT:
         LD      D,24            ;ENTER HERE TO FLOAT INTEGER
                                 ;PRESERVING ORIGINAL SIGN IN (H,L)+3
-                                ;SET UP CHARACTERISTIC
+                                ;SET UP EXPONENT
         JP     FXL2             ;GO FLOAT THE NUMBER
 ;
 ;
@@ -781,14 +780,14 @@ DSUB:
 ;
 ;   SUBROUTINE GCHAR
 ;
-;       THIS SUBROUTINE RETURNS THE CHARACTERISTIC OF
+;       THIS SUBROUTINE RETURNS THE EXPONENT OF
 ;       THE FLOATING POINT NUMBER POINTED TO BY (H,L)
 ;       IN THE A REGISTER WITH ITS SIGN EXTENDED INTO THE
 ;       LEFTMOST BIT.
 ;
 ;   REGISTERS ON EXIT:
 ;
-;       A = CHARACTERISTIC OF (H,L) WITH SIGN EXTENDED
+;       A = EXPONENT OF (H,L) WITH SIGN EXTENDED
 ;       L = (ORIGINAL L) + 3
 ;       B,C,D,E,H = SAME AS ON ENTRY
 ;
@@ -814,8 +813,8 @@ GCHAR:
 ;
 ;   REGISTERS ON EXIT:
 ;
-;       A = CHARACTERISTIC OF (H,L) WITH SIGN EXTENDED
-;       E = CHARACTERISTIC OF (H,B) WITH SIGN EXTENDED
+;       A = EXPONENT OF (H,L) WITH SIGN EXTENDED
+;       E = EXPONENT OF (H,B) WITH SIGN EXTENDED
 ;       B,C,H,L = SAME AS ON ENTRY
 ;       D = A
 ;
@@ -843,8 +842,8 @@ CFCHE:
 ;
 ;   REGISTERS ON EXIT:
 ;
-;       A = CHARACTERISTIC OF (H,L) WITH SIGN EXTENDED
-;       E = CHARACTERISTIC OF (H,B) WITH SIGN EXTENDED
+;       A = EXPONENT OF (H,L) WITH SIGN EXTENDED
+;       E = EXPONENT OF (H,B) WITH SIGN EXTENDED
 ;       D = A
 ;       B,C,H,L = SAME AS ON ENTRY
 ;
@@ -881,8 +880,8 @@ CCMP:
 ;
 
 WUND:
-        LD      D,100Q          ;LOAD CHARACTERISTIC INTO D REGISTER
-        CALL    WCHAR           ;WRITE CHARACTERISTIC
+        LD      D,100Q          ;LOAD EXPONENT INTO D REGISTER
+        CALL    WCHAR           ;WRITE EXPONENT
 UFLW1:
         LD      A,0             ;LOAD MANTISSA VALUE
                                 ;WE ASSUME HERE THAT ALL BYTES OF MANTISSA
@@ -893,8 +892,8 @@ UFLW1:
         RET                     ;RETURN (WMANT RESTORED (H,L))
 
 WOVR:
-        LD      D,77Q           ;LOAD CHARACTERISTIC INTO D REGISTER
-        CALL    WCHAR           ;WRITE CHARACTERISTIC
+        LD      D,77Q           ;LOAD EXPONENT INTO D REGISTER
+        CALL    WCHAR           ;WRITE EXPONENT
 OFLW1:
         LD      A,377Q          ;LOAD MANTISSA VALUE
                                 ;WE ASSUME HERE THAT ALL BYTES OF MANTISSA
@@ -905,8 +904,8 @@ OFLW1:
         RET                     ;RETURN (WMANT RESTORED (H,L))
 
 WIND:
-        LD      D,77Q           ;LOAD CHARACTERISTIC INTO D REGISTER
-        CALL    WCHAR           ;WRITE CHARACTERISTIC
+        LD      D,77Q           ;LOAD EXPONENT INTO D REGISTER
+        CALL    WCHAR           ;WRITE EXPONENT
 INDF1:
         LD      A,377Q          ;LOAD MANTISSA VALUE
                                 ;WE ASSUME HERE THAT ALL BYTES OF MANTISSA
@@ -920,7 +919,7 @@ WZER:
         INC     L               ;WRITE NORMAL ZERO
         INC     L               ;
         INC     L               ;
-        LD      (HL),100Q       ;STORE CHARACTERISTIC FOR ZERO
+        LD      (HL),100Q       ;STORE EXPONENT FOR ZERO
         XOR     A               ;ZERO ACCUMULATOR
         CALL    WMANT           ;STORE ZERO MANTISSA
         OR      A               ;SET FLAGS PROPERLY
@@ -941,20 +940,20 @@ WMANT:
         RET                     ;RETURN (H,L) POINTS TO BEGINNING OF
                                 ;FLOATING POINT RESULT
 ;
-; ROUTINE TO WRITE CHARACTERISTIC FOR ERROR RETURNS
+; ROUTINE TO WRITE EXPONENT FOR ERROR RETURNS
 ; NOTE:  WE PRESERVE ORIGINAL MANTISSA SIGN
-; ON ENTRY D CONTAINS NEW CHARACTERISTIC TO BE STORED.
+; ON ENTRY D CONTAINS NEW EXPONENT TO BE STORED.
 ;
 WCHAR:
-        INC     L               ;SET (H,L) TO POINT TO CHARACTERISTIC
+        INC     L               ;SET (H,L) TO POINT TO EXPONENT
         INC     L               ;PART OF ABOVE
         INC     L               ;PART OF ABOVE
-        LD      A,(HL)          ;LOAD CHARACTERISTIC A
+        LD      A,(HL)          ;LOAD EXPONENT A
                                 ;AND MANTISSA SIGN
         AND     200Q            ;JUST KEEP MANTISSA SIGN
-        OR      D               ;OR IN NEW CHARACTERISTIC
+        OR      D               ;OR IN NEW EXPONENT
         LD      (HL),A          ;STORE IT BACK
-        RET                     ;RETURN WITH (H,L) POINT TO CHARACTERISTIC
+        RET                     ;RETURN WITH (H,L) POINT TO EXPONENT
                                 ;OF RESULT
                                 ;SOMEONE ELSE WILL FIX UP (H,L)
 ;
@@ -987,7 +986,7 @@ WZERC:
 ;
 ;   SUBROUTINE INCR
 ;
-;       THIS SUBROUTINE INCREMENTS THE CHARACTERISTIC
+;       THIS SUBROUTINE INCREMENTS THE EXPONENT
 ;       OF THE FLOATING POINT NUMBER POINTED TO BY (H,L).
 ;       WE TEST FOR OVERFLOW AND SET APPROPRIATE FLAG.
 ;       (SEE ERROR RETURNS).
@@ -1007,7 +1006,7 @@ INCR:
         JP      INCR2           ;JUMP AROUND ALTERNATE ENTRY POINT
 
 INCR3:
-        INC     L               ;COME HERE TO STORE CHARACTERISTIC
+        INC     L               ;COME HERE TO STORE EXPONENT
         INC     L               ;POINT (H,L) TO CHAR
         INC     L               ;POINT (H,L) TO CHAR
 INCR2:
@@ -1027,7 +1026,7 @@ SCCFG:
 ;
 ;   SUBROUTINE DECR
 ;
-;       THIS SUBROUTINE DECREMENTS THE CHARACTERISTIC
+;       THIS SUBROUTINE DECREMENTS THE EXPONENT
 ;       OF THE FLOATING POINT NUMBER POINTED TO BY (H,L).
 ;       WE TEST FOR UNDERFLOW AND SET APPROPRIATE FLAG.
 ;       (SEE ERROR RETURNS).
@@ -1042,8 +1041,8 @@ DECR:
         CALL    GCHAR           ;GET CHAR WITH SIGN EXTENDED
         CP      MINCH           ;COMPARE WITH MIN CHAR PERMITTED
         JP      Z,UFLW1         ;DECREMENT WOULD CAUSE UNDERFLOW
-        LD      D,A             ;SAVE CHARACTERISTIC IN D
-        DEC     D               ;DECREMENT CHARACTERISTIC
+        LD      D,A             ;SAVE EXPONENT IN D
+        DEC     D               ;DECREMENT EXPONENT
         JP      INCR2           ;GO STORE IT BACK
 ;
 ;   SUBROUTINE AORS
@@ -1173,7 +1172,7 @@ REP5:
 ;
 ;   SUBROUTINE LDCP
 ;
-;       THIS SUBROUTINE COMPUTES THE CHARACTERISTIC
+;       THIS SUBROUTINE COMPUTES THE EXPONENT
 ;       FOR THE FLOATING DIVIDE ROUTINE
 ;
 ;   REGISTERS ON EXIT:
@@ -1190,14 +1189,14 @@ REP5:
 ;
 LDCP:
         CALL    CFCHE           ;SET E=CHAR(H,B), A=CHAR(H,L)
-        SUB     E               ;SUBTRACT TO GET NEW CHARACTERISTIC
+        SUB     E               ;SUBTRACT TO GET NEW EXPONENT
         JP      CCHK            ;GO CHECK FOR OVER/UNDERFLOW
-                                ;AND STORE CHARACTERISTIC
+                                ;AND STORE EXPONENT
 ;
 ;
 ;   SUBROUTINE LMCP
 ;
-;       THIS SUBROUTINE COMPUTES THE CHARACTERISTIC
+;       THIS SUBROUTINE COMPUTES THE EXPONENT
 ;       FOR THE FLOATING MULTIPLY ROUTINE.
 ;
 ;   REGISTERS ON EXIT:
@@ -1214,17 +1213,17 @@ LDCP:
 ;
 LMCP:
         CALL    CFCHE           ;SET E=CHAR(H,B), A=CHAR(H,L)
-        ADD     A,E             ;ADD TO GET NEW CHARACTERISTIC
+        ADD     A,E             ;ADD TO GET NEW EXPONENT
                                 ;NOW FALL INTO THE ROUTINE
                                 ;WHICH CHECKS FOR OVER/UNDERFLOW
-                                ;AND STORE CHARACTERISTIC
+                                ;AND STORE EXPONENT
 ;
 ;
 ;   SUBROUTINE CCHK
 ;
-;       THIS SUBROUTINE CHECKS A CHARACTERISTIC IN
+;       THIS SUBROUTINE CHECKS A EXPONENT IN
 ;       THE ACCUMULATOR FOR OVERFLOW OR UNDERFLOW.
-;       IT THEN STORES THE CHARACTERISTIC, PRESERVING
+;       IT THEN STORES THE EXPONENT, PRESERVING
 ;       THE PREVIOUSLY COMPUTED MANTISSA SIGN.
 ;
 ;  REGISTERS ON ENTRY:
@@ -1232,7 +1231,7 @@ LMCP:
 ;       (H,L) = ADDRESS OF ONE OPERAND
 ;       (H,B) = ADDRESS OF OTHER OPERAND
 ;       (H,C) = ADDRESS OF RESULT
-;       A     = NEW CHARACTERISTIC OF  RESULT
+;       A     = NEW EXPONENT OF  RESULT
 ;
 ;   REGISTERS ON EXIT:
 ;
@@ -1240,7 +1239,7 @@ LMCP:
 ;       D,E = GARBAGE
 ;       B,C,H,L = SAME AS ON ENTRY
 ;
-CCHK:                           ;ENTER HERE TO CHECK CHARACTERISTIC
+CCHK:                           ;ENTER HERE TO CHECK EXPONENT
         CP      100Q            ;CHECK FOR 0 TO +63
         JP      C,STORC         ;JUMP IF OKAY
         CP      200Q            ;CHECK FOR +64 TO +127
@@ -1250,8 +1249,8 @@ CCHK:                           ;ENTER HERE TO CHECK CHARACTERISTIC
 STORC:
         LD      E,L             ;SAVE L IN E
         LD      L,C             ;LET L POINT TO RESULT
-        LD      D,A             ;SAVE CHARACTERISTIC IN D
-        CALL    INCR3           ;STORE CHARACTERISTIC
+        LD      D,A             ;SAVE EXPONENT IN D
+        CALL    INCR3           ;STORE EXPONENT
         LD      L,E             ;RESTORE L
         RET                     ;RETURN
 ;
@@ -1565,7 +1564,7 @@ TRY1:
         LD      L,TEN & 377Q    ;NOW USE JUST TEN
         CALL    COPT            ;PUT IT IN RAM
 TST1:
-        CALL    GCHR            ;GET CHARACTERISTIC
+        CALL    GCHR            ;GET EXPONENT
         CP     1                ;MUST GET IN RANGE 1 TO 6
         JP      P,OK1           ;AT LEAST ITS 1 OR BIGGER
 
@@ -1684,7 +1683,7 @@ PLSV:
         RET
 
 GCHR:
-        LD      L,C             ;GET CHARACTERISTIC
+        LD      L,C             ;GET EXPONENT
 GETA:
         INC     L               ;MOVE TO IT
         INC     L
@@ -1795,7 +1794,7 @@ TEN:    .DB      240Q,0Q,0Q,4Q  ;12(8) = 10
 ;       C-1             OVERFLOW
 ;       C               HIGH NUMBER - MANTISSA
 ;       C+1             LOW NUMBER
-;       C+2             CHARACTERISTIC
+;       C+2             EXPONENT
 ;       C+3             DECIMAL EXPONENT (SIGN & MAG.)
 ;       C+4             TEN**N
 ;       C+5             TEN**N
