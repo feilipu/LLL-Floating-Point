@@ -48,98 +48,25 @@ MAXCH   .EQU    077Q            ;MAXIMUM EXPONENT WITH SIGN EXTENDED
 ;TXA            RST 1           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
 ;RXA            RST 2           ;RETURN RX CHARACTER IN A, BLOCKING
 ;RXA_CHK        RST 3           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
-;HEXLOADR       RST 3           ;INITIATES INTEL HEX LOADING FUNCTION ON RX
+;HEXLOADR       RST 4           ;INITIATES INTEL HEX LOADING FUNCTION ON RX
 ;
 ; Or calls directly to the functions can also be made, as below.
-
-
-                                ;RC2014 Function Calls from Nascom Basic Symbol Tables
-;TXA     .EQU    00C9H           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
-;RXA     .EQU    009FH           ;RETURN RX CHARACTER IN A, BLOCKING
-;RXA_CHK .EQU    0108H           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
-
-;DEINT   .EQU    0B57H           ;Function DEINT to get (IX+USR) into DE registers
-;ABPASS  .EQU    12CCH           ;Function ABPASS to put output into AB register for return
-
 
                                 ;YAZ180 Function Calls from Nascom Basic Symbol Tables
 TXA     .EQU    016BH           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
 RXA     .EQU    0154H           ;RETURN RX CHARACTER IN A, BLOCKING
 RXA_CHK .EQU    01A9H           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
 
-DEINT   .EQU    0C3FH           ;Function DEINT to get (IX+USR) into DE registers
-ABPASS  .EQU    13B4H           ;Function ABPASS to put output into AB register for return
-
-INT0_FPU    .EQU     $3800      ; start of the FPU Interrupt 1 asm code (RAM)
-
-CR      .EQU    0DH             ;CARRIAGE RETURN
-LF      .EQU    0AH             ;LINEFEED
-
-;
 ;
 ;******************************************************
-;       //// SIMPLE EXERCISE PROGRAM
+;       //// LIBRARY ORIGIN
 ;******************************************************
 ;
-;
-SCRPG   .EQU    23H             ;SCRATCH PAGE IS 2300H
-OP1     .EQU    00H             ;STARTING LOCATION OF OPERAND 1
-OP2     .EQU    OP1+4           ;STARTING LOCATION OF OPERAND 2
-RSULT   .EQU    OP2+4           ;STARTING LOCATION OF RESULT
-SCR     .EQU    RSULT+4         ;STARTING LOCATION OF SCRATCH AREA
+        .ORG    3000H           ;LIBRARY ORIGIN FOR YAZ180 DURING TESTING
 
-
-        .ORG    4000H           ;ORIGIN FOR RC2014 AND YAZ180 DURING TESTING
-
-TEST:
-        LD      HL,HELLO        ;LOAD HL ADDRESS OF HELLO
-        CALL    PRINT           ;PRINT IT
-
-        LD      H,SCRPG         ;SET H REGISTER TO RAM SCRATCH PAGE
-        LD      L,OP1           ;POINTER TO OPERAND 1
-        LD      C,SCR           ;SCRATCH AREA
-
-        CALL    INPUT           ;INPUT OPERAND 1 FROM TTY
-
-                                ;EXAMPLE CODE - TWO OPERAND INPUT
-
-;        LD      H,SCRPG        ;SET H REGISTER TO RAM SCRATCH PAGE
-;        LD      L,OP2          ;POINTER TO OPERAND 2
-;        LD      C,SCR          ;SCRATCH AREA
-
-;        CALL    INPUT          ;INPUT OPERAND 2 FROM TTY
-
-;        LD      L,OP1          ;OPERAND 1 POINTER IN (H)L
-;        LD      B,OP2          ;OPERAND 2 POINTER IN (H)B
-;        LD      C,RSULT        ;RESULT TO (H)C POINTER
-
-;        CALL    LDIV           ;DIVIDE OP1 BY OP2 AND PLACE RESULT IN RSULT
-;        CALL    LMUL           ;MULTIPLY OP1 BY OP2 AND PLACE RESULT IN RSULT
-
-                                ;EXAMPLE CODE - ONE OPERAND INPUT
-
-        LD      L,OP1           ;OPERAND 1 POINTER IN (H)L
-        LD      B,RSULT         ;RESULT TO (H)B POINTER
-        LD      C,SCR           ;SCRATCH AREA
-
-        CALL    DSQRT           ;SQUARE ROOT OF OP1 AND PLACE RESULT IN RSULT
-
-                                ;EXAMPLE CODE - OUTPUT
-
-        LD      L,RSULT         ;(H)L POINTER NOW RSULT
-        LD      C,SCR           ;SCRATCH AREA
-
-        CALL    CVRT            ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
-        
-        JP      TEST            ;START AGAIN
-
-HELLO:
-        .BYTE   CR,LF
-        .BYTE   "LLL Float ",0
-;
 ;
 ;******************************************************
-;       //// OUTPUT SUBROUTINES
+;       //// OUTPUT SUBROUTINE
 ;******************************************************
 ;
 ; OUTR OUTPUT FROM CVRT INTO TX0 OUTPUT BUFFER
@@ -149,14 +76,6 @@ OUTR:
         AND     7FH             ;CLEAR HIGH BIT
         CALL    TXA             ;OUTPUT THE CHARACTER TO TXA
         RET
-
-PRINT:
-        LD      A,(HL)          ;Get character from HL
-        OR      A               ;Is it $00 ?
-        RET     Z               ;Then RETurn on terminator
-        CALL    TXA             ;PRINT IT
-        INC     HL              ;Point to next character 
-        JP      PRINT           ;Continue until $00
 ;
 ;
 ;******************************************************
@@ -195,15 +114,6 @@ INP_DONE:
         POP     AF
         OR      80H             ;SET HIGH BIT
         RET
-
-;
-;
-;******************************************************
-;       //// LLL LIBRARY CODE
-;******************************************************
-;
-
-        .ORG    3000H           ;LIBRARY ORIGIN FOR RC2014 AND YAZ180 DURING TESTING
 ;
 ;
 ;******************************************************
@@ -264,7 +174,6 @@ CRIN:
         ADD     A,1             ;ADD 1 SINCE WE DID NOT LEFTSHIFT
         CALL    CCHK            ;CHECK AND STORE EXPONENT
         RET                     ;RETURN
-;
 ;
 ;
 ;******************************************************
@@ -2040,5 +1949,6 @@ ZROIT:
 ;
 ; END of code from LLNL PDF document
 ;
+
         .END
 
