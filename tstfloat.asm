@@ -117,12 +117,16 @@ TEST:
         ld a, OP_REM32_CMD      ;REMOVE 32 bit OPERAND (floating point in this case)
         call APU_OP_LD
         
-        call APU_ISR            ;KICK OFF APU PROCESS WITH INTERRUPTS
-        call APU_ISR            ;KICK OFF APU PROCESS WITH INTERRUPTS
-        call APU_ISR            ;KICK OFF APU PROCESS WITH INTERRUPTS
-        call APU_ISR            ;KICK OFF APU PROCESS WITH INTERRUPTS
-        
+        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
+        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
+        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS        
+        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
+        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
+
 APU_WAIT:
+        ex (sp), hl             ; a short delay
+        ex (sp), hl
+        
         ld a, (APUCMDBufUsed)   ; get the usage of the COMMAND buffer
         and a                   ; check it is zero
         jr nz, APU_WAIT         ; otherwise wait
