@@ -274,6 +274,7 @@ RAMSTART        .EQU     RAMSTART_CA0
 RAMSTOP         .EQU     RAMSTOP_CA1
 
 APU_BUFF_START  .EQU     $2300 ; START AT RAM 0x2300 TO CLEAR SER BUFFER
+APU_STACKTOP    .EQU     $25FE ; Keep RAM usage below 0x25FF
 
 INT0_APU        .EQU     $3800 ; the APU IM1 INT0 jump (RAM)
 INT0_APU_ISR    .EQU     $3810 ; start of the APU ISR asm code (RAM)
@@ -331,7 +332,8 @@ APUPTRBufUsed   .EQU     APUCMDBufUsed+1
 
 APU_ISR:
         di                      ; we're called directly, the first time
-
+        ld (APU_STACKTOP), sp   ; store the old stack top, at top of new SP
+        ld sp, APU_STACKTOP     ; set new Stack Pointer
         push af                 ; store AF, etc, so we don't clobber it
         push bc
         push hl
@@ -345,10 +347,6 @@ APU_ISR_ENTRY:
         or a                    ; zero?
         jr z, APU_ISR_END       ; if so then exit
 
-        in0 a, (ITC)            ; Get INT/TRAP Control Register (ITC)
-        or  ITC_ITE0            ; Mask in INT0             
-        out0 (ITC), a           ; Enable external interrupt INT0
-
         ld hl, (APUCMDOutPtr)   ; get the pointer to place where we pop the COMMAND
         ld a, (hl)              ; get the COMMAND byte
         push af                 ; save the COMMAND
@@ -357,33 +355,28 @@ APU_ISR_ENTRY:
         ld (APUCMDOutPtr), hl   ; write where the next byte should be popped
 
         ld hl, APUCMDBufUsed
-        dec (hl)                ; atomically decrement current CMD count remaining
+        dec (hl)                ; atomically decrement current COMMAND count remaining
         
         and $F0                 ; mask MSB of COMMAND
-        cp OP_ENT_CMD           ; check whether it is OPERAND entry
+        cp OP_ENT_CMD           ; check whether it is OPERAND entry COMMAND
         jr z, APU_ISR_OP_ENT    ; load an OPERAND
         
-        cp OP_REM_CMD           ; check whether it is OPERAND removal
+        cp OP_REM_CMD           ; check whether it is OPERAND removal COMMAND
         jr z, APU_ISR_OP_REM    ; remove an OPERAND
 
         pop af                  ; recover the COMMAND
         ld bc, APUCNTL          ; the address of the APU control port in BC
-        out (c),a               ; load the COMMAND
-        jr APU_ISR_EXIT         ; we're done here, until next interrupt.
-
-APU_ISR_END:
+        out (c), a              ; load the COMMAND <<<<<<<<<<<<<<<<<<<<< THIS LINE HANGS
+        
         in0 a, (ITC)            ; Get INT/TRAP Control Register (ITC)
-        and ~ITC_ITE0           ; Mask out other interrupts              
-        out0 (ITC), a           ; Disable external interrupt INT0
-
-                                ; Set internal clock = crystal x 2 = 36.864MHz
-        ld a, CMR_X2            ; Set Hi-Speed flag
-        out0 (CMR), a           ; CPU Clock Multiplier Reg (CMR)
-
+        or  ITC_ITE0            ; Mask in INT0
+        out0 (ITC), a           ; Enable external interrupt INT0
+        
 APU_ISR_EXIT:
         pop hl                  ; recover HL, etc
         pop bc
         pop af
+        ld sp, (APU_STACKTOP)   ;recover the old Stack Pointer
         ei
         reti
 
@@ -410,8 +403,8 @@ APU_ISR_OP_ENT:
         outi
 
         pop af                  ; get the command back
-        cp OP_ENT32_CMD         ; is it a 4 byte OPERAND
-        jr nz, APU_ISR_ENTRY    ; no? then go back to get another COMMAND
+        cp OP_ENT16_CMD         ; is it a 2 byte OPERAND
+        jr z, APU_ISR_ENTRY     ; yes? then go back to get another COMMAND
 
         outi                    ; output last two bytes of 32 bit OPERAND
         outi
@@ -440,20 +433,29 @@ APU_ISR_OP_REM:
         inc hl                  ; reverse the OPERAND bytes to load
 
         pop af                  ; get the command back
-        cp OP_REM32_CMD         ; is it a 4 byte OPERAND
-        call z, APU_ISR_REM32   ; yes then do it
+        cp OP_REM16_CMD         ; is it a 2 byte OPERAND
+        jr z, APU_ISR_REM16     ; yes then skip
 
-        ind                     ; get 16 bit OPERAND
-        ind
-
-        jp APU_ISR_ENTRY        ; go back to get another COMMAND
-
-APU_ISR_REM32:
         inc hl                  ; increment two more bytes for 32bit OPERAND
         inc hl
         ind                     ; get the higher two bytes of 32bit OPERAND
         ind
-        ret
+
+APU_ISR_REM16:
+        ind                     ; get 16 bit OPERAND
+        ind
+                                ; There is only ever one result
+APU_ISR_END:                    ; We're done
+        in0 a, (ITC)            ; Get INT/TRAP Control Register (ITC)
+        and ~ITC_ITE0           ; Mask out INT0   
+        out0 (ITC), a           ; Disable external interrupt INT0
+
+                                ; Set internal clock = crystal x 2 = 36.864MHz
+        ld a, CMR_X2            ; Set Hi-Speed flag
+        out0 (CMR), a           ; CPU Clock Multiplier Reg (CMR)
+
+        jr APU_ISR_EXIT         ; We're done here
+
         
 ;==================================================================================
 ;
@@ -466,56 +468,96 @@ APU_ISR_REM32:
 
 APU_INIT:
         push af
+        push bc
+        push de
         push hl
 
-        LD  HL,APUCMDBuf        ; Initialise CMD Buffer
-        LD (APUCMDInPtr),HL
-        LD (APUCMDOutPtr),HL
+        LD  HL, APUCMDBuf       ; Initialise COMMAND Buffer
+        LD (APUCMDInPtr), HL
+        LD (APUCMDOutPtr), HL
 
-        LD HL,APUPTRBuf         ; Initialise POINTER Buffer
-        LD (APUPTRInPtr),HL
-        LD (APUPTROutPtr),HL              
+        LD HL, APUPTRBuf        ; Initialise OPERAND POINTER Buffer
+        LD (APUPTRInPtr), HL
+        LD (APUPTROutPtr), HL
 
-        XOR A                   ; 0 the buffer counts
-        LD (APUCMDBufUsed),A
-        LD (APUPTRBufUsed),A
+        XOR A                   ; 0 both Buffer counts
+        LD (APUCMDBufUsed), A
+        LD (APUPTRBufUsed), A
+        
+        XOR A
+        LD (APUCMDBuf), A       ; Clear COMMANDj Buffer
+        LD HL, APUCMDBuf
+        LD D, H
+        LD E, L
+        INC DE
+        LD BC, APU_CMD_BUFSIZE
+        LDIR
 
-        ld hl, INT0_APU ; load the address of the APU INT0 jump
-                        ; initially there is a RET 0xC9 there.
-;        ld (hl), $c3    ; load a JP to 0x3810
-;        inc hl
-;        ld (hl), $10
-;        inc hl
-;        ld (hl), $38
+        XOR A
+        LD (APUPTRBuf), A       ; Clear OPERAND POINTER Buffer
+        LD HL, APUPTRBuf
+        LD D, H
+        LD E, L
+        INC DE
+        LD BC, APU_PTR_BUFSIZE
+        LDIR
 
-        ld (hl), $c3    ; load a JP to 0x0020
+        ld hl, INT0_APU         ; load the address of the APU INT0 jump
+                                ; initially there is a RET 0xC9 there.
+        ld (hl), $c3            ; load a JP to 0x3810
         inc hl
-        ld (hl), $20
+        ld (hl), $10
         inc hl
-        ld (hl), $00
+        ld (hl), $38
+
+;        ld (hl), $c3           ; load a JP to 0x0020
+;        inc hl
+;        ld (hl), $20
+;        inc hl
+;        ld (hl), $00
+
+APU_INIT_LOOP:
+        ex (sp), hl             ; a short delay
+        ex (sp), hl
+
+        ld bc, APUSTAT          ; the address of the APU status port in bc
+        in a, (c)               ; read the APU
+        and $80                 ; Busy?
+        jr nz, APU_INIT_LOOP
 
         pop hl
+        pop de
+        pop bc
         pop af
         ret
 
 ;------------------------------------------------------------------------------
-;       APU_CHK_RDY
+;       APU_CHK_IDLE
 ;       Confirms whether the APU is idle
 ;       Loop until it returns ready
+;       For Interrupt driven, not useful.
+;       Operand Entry and Removal takes little time,
+;       and we'll be interrupted for Command entry.
 
-APU_CHK_RDY:
+APU_CHK_IDLE:
         push af
         push bc
 
 APU_CHK_LOOP:
-        ld bc, APUSTAT          ; the address of the APU status port in bc
-        in a, (c)               ; read the APU
-        and $80                 ; Busy?
-
         ex (sp), hl             ; a short delay
         ex (sp), hl
 
-        jr nz, APU_CHK_LOOP
+        ld a, (APUCMDBufUsed)   ; get the usage of the COMMAND buffer
+        and a                   ; check it is zero
+        jr nz, APU_CHK_LOOP     ; otherwise wait
+        
+        ex (sp), hl             ; a short delay
+        ex (sp), hl
+
+        ld bc, APUSTAT          ; the address of the APU status port in bc
+        in a, (c)               ; read the APU
+        and $80                 ; Busy?
+        jr nz, APU_CHK_LOOP     ; then wait
 
         pop bc
         pop af
@@ -523,7 +565,7 @@ APU_CHK_LOOP:
 
 ;------------------------------------------------------------------------------
 ;       APU_OP_LD
-;       POINTER to operand in DE
+;       POINTER to OPERAND in DE
 ;       APU COMMAND in A
 
 APU_OP_LD:
@@ -534,7 +576,7 @@ APU_OP_LD:
         cp APU_CMD_BUFSIZE      ; check whether there is space in the buffer
         
         pop af                  ; pop the operand entry COMMAND        
-        jr z, APU_OP_EXIT       ; COMMAND buffer full, so pop the data and exit
+        jr z, APU_OP_EXIT       ; COMMAND buffer full, so pop the COMMAND and exit
 
         ld hl, (APUCMDInPtr)    ; get the pointer to where we poke
         ld (hl), a              ; write the COMMAND byte to the APUCMDInPtr   
@@ -545,11 +587,10 @@ APU_OP_LD:
         ld hl, APUCMDBufUsed
         inc (hl)                ; atomic increment of COMMAND count
 
-        ld a, (APUPTRBufUsed)   ; Get the number of bytes in the POINTER buffer
+        ld a, (APUPTRBufUsed)   ; Get the number of bytes in the OPERAND POINTER buffer
         cp APU_PTR_BUFSIZE-1    ; check whether there is space for a POINTER
         jr z, APU_OP_EXIT       ; buffer full, so exit
         
-        di                      ; atomic management of POINTER and count
         ld hl, (APUPTRInPtr)    ; get the pointer to where we poke
         ld (hl), e              ; write the low byte of POINTER to the APUPTRInPtr   
         inc l                   ; move the POINTER low byte along, 0xFF rollover
@@ -560,10 +601,9 @@ APU_OP_LD:
         ld hl, APUPTRBufUsed
         inc (hl)
         inc (hl)
-        ei
 
 APU_OP_EXIT:
-        pop hl                  ; recover HL
+        pop hl                  ; recover HL      
         ret
 
 ;------------------------------------------------------------------------------
@@ -578,7 +618,7 @@ APU_CMD_LD:
         cp APU_CMD_BUFSIZE      ; check whether there is space in the buffer
         
         pop af                  ; pop the operand entry COMMAND        
-        jr z, APU_CMD_EXIT      ; COMMAND buffer full, so pop the data and exit
+        jr z, APU_CMD_EXIT      ; COMMAND buffer full, so pop the COMMAND and exit
 
         ld hl, (APUCMDInPtr)    ; get the pointer to where we poke
         ld (hl), a              ; write the COMMAND byte to the APUCMDInPtr   

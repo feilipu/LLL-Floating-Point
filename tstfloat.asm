@@ -14,13 +14,15 @@
 ;******************************************************
 ;
 
-DEINT   .EQU    0C3FH           ;Function DEINT to get (IX+USR) into DE registers
-ABPASS  .EQU    13B4H           ;Function ABPASS to put output into AB register for return
+DEINT       .EQU    0C3FH           ;Function DEINT to get (IX+USR) into DE registers
+ABPASS      .EQU    13B4H           ;Function ABPASS to put output into AB register for return
 
-USRSTART .EQU   $4000           ; start of USR(x) asm code
+STACKTOP    .EQU    $2FFE           ; start (top) of stack (any pushes pre-decrement)
 
-CR      .EQU    0DH             ;CARRIAGE RETURN
-LF      .EQU    0AH             ;LINEFEED
+USRSTART    .EQU    $4000           ; start of USR(x) asm code
+
+CR          .EQU    0DH             ;CARRIAGE RETURN
+LF          .EQU    0AH             ;LINEFEED
 
 ;
 ;
@@ -37,17 +39,24 @@ RSULT   .EQU    OP2+4           ;STARTING LOCATION OF RESULT
 SCR     .EQU    RSULT+4         ;STARTING LOCATION OF SCRATCH AREA
 
 
-                        ; ORIGIN FOR YAZ180 DURING TESTING
-        .org USRSTART   ; start from 'X' jump, Basic prompt
+                                ; ORIGIN FOR YAZ180 DURING TESTING
+        .org USRSTART           ; start from 'X' jump, Basic prompt
 
-                        ; Am9511A I/O is from $C000 to $C001
+                                ; Am9511A I/O is from $C000 to $C001
 
-                        ; assume the operand byte code in function call
-                        ; return 16 bit result (if relevant)
-                        ; NOS, TOS, poked to relevant addresses
-                        ; Result peeked from relevant address
+                                ; assume the operand byte code in function call
+                                ; return 16 bit result (if relevant)
+                                ; NOS, TOS, poked to relevant addresses
+                                ; Result peeked from relevant address
+
+        call DEINT              ; get the USR(x) argument in de     
+
 TEST:
-        LD      HL,APU_HELLO    ;LOAD HL ADDRESS OF HELLO
+
+        ld (STACKTOP), sp       ; store the old stack top, at top of new SP
+        ld sp, STACKTOP         ; set new Stack Pointer
+
+        LD      HL, APU_HELLO   ;LOAD HL ADDRESS OF HELLO
         CALL    PRINT           ;PRINT IT
 
                                 ;EXAMPLE CODE - ONE OPERAND COMMAND
@@ -84,10 +93,10 @@ TEST:
                                 ;EXAMPLE CODE - APU ONE OPERAND COMMAND
         
         call APU_INIT           ;INITIALISE THE APU
-        
+         
         LD H, SCRPG             ;SET H REGISTER TO RAM SCRATCH PAGE
         LD L, OP1               ;POINTER TO OPERAND 1
-        LD  C, SCR              ;SCRATCH AREA
+        LD C, SCR               ;SCRATCH AREA
 
         CALL INPUT              ;INPUT OPERAND 1 FROM TTY
 
@@ -117,20 +126,14 @@ TEST:
         ld a, OP_REM32_CMD      ;REMOVE 32 bit OPERAND (floating point in this case)
         call APU_OP_LD
         
-        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
-        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
-        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS        
-        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
-        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
+        call APU_ISR            ;KICK OFF APU PROCESS INTERRUPTS
+;        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
+;        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS        
+;        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
+;        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
 
-APU_WAIT:
-        ex (sp), hl             ; a short delay
-        ex (sp), hl
-        
-        ld a, (APUCMDBufUsed)   ; get the usage of the COMMAND buffer
-        and a                   ; check it is zero
-        jr nz, APU_WAIT         ; otherwise wait
-        call APU_CHK_RDY        ; one final check, because it could be doing a last command
+
+        call APU_CHK_IDLE       ; one final check, because it could be doing a last command
 
                                 ;EXAMPLE CODE - OUTPUT
 
@@ -139,6 +142,8 @@ APU_WAIT:
         LD C, SCR               ;SCRATCH AREA
 
         CALL CVRT               ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
+        
+        ld sp, (STACKTOP)       ;recover the old Stack Pointer
         
         JP TEST                 ;START AGAIN
 
