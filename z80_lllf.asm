@@ -45,17 +45,16 @@ MAXCH   .EQU    077Q            ;MAXIMUM EXPONENT WITH SIGN EXTENDED
 ;
 ; RC2014 and YAZ180 have TX0 and RX0 and RX0_CHK located at RST jumps.
 ;
-;TXA            RST 1           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
-;RXA            RST 2           ;RETURN RX CHARACTER IN A, BLOCKING
-;RXA_CHK        RST 3           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
-;HEXLOADR       RST 4           ;INITIATES INTEL HEX LOADING FUNCTION ON RX
+;TX0            RST 1           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
+;RX0            RST 2           ;RETURN RX CHARACTER IN A, BLOCKING
+;RX0_CHK        RST 3           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
 ;
 ; Or calls directly to the functions can also be made, as below.
 
                                 ;YAZ180 Function Calls from Nascom Basic Symbol Tables
-TXA     .EQU    016BH           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
-RXA     .EQU    0154H           ;RETURN RX CHARACTER IN A, BLOCKING
-RXA_CHK .EQU    01A9H           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
+TX0     .EQU    016BH           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
+RX0     .EQU    0154H           ;RETURN RX CHARACTER IN A, BLOCKING
+RX0_CHK .EQU    01A9H           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
 
 ;
 ;******************************************************
@@ -74,7 +73,7 @@ RXA_CHK .EQU    01A9H           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN 
 ;
 OUTR:
         AND     7FH             ;CLEAR HIGH BIT
-        CALL    TXA             ;OUTPUT THE CHARACTER TO TXA
+        CALL    TX0             ;OUTPUT THE CHARACTER TO TXA
         RET
 ;
 ;
@@ -93,7 +92,7 @@ OUTR:
 ; ROUTINE ECHOS THE CHARACTERS FORWARDED
 ;
 INP:
-        CALL    RXA             ;INPUT A CHARACTER FROM RX0
+        CALL    RX0             ;INPUT A CHARACTER FROM RX0
         CP      '+'             ;+?
         JP      Z,INP_DONE
         CP      '-'             ;-?
@@ -110,7 +109,7 @@ SPACE:
         LD      A,' '           ;SEND A SPACE
 INP_DONE:
         PUSH    AF
-        CALL    TXA
+        CALL    TX0
         POP     AF
         OR      80H             ;SET HIGH BIT
         RET

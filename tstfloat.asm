@@ -4,35 +4,27 @@
 ; February / March 2017
 ;
 
-#include "d:/am9511a.asm"       ;include the Am9511A-1 Library
-#include "d:/z80_lllf.asm"      ;include the lll float library
+#include "d:/yaz180.h"          ;include the yaz180 header
+
+#include "d:/am9511a.asm"       ;include the Am9511A-1 library
+#include "d:/z80_lllf.asm"      ;include the LLL float library
 
 ;
-;
-;******************************************************
-;       //// RC2014 & YAZ180 DEFINES
-;******************************************************
+;==============================================================================
+;       RC2014 & YAZ180 DEFINES
 ;
 
-DEINT       .EQU    0C3FH           ;Function DEINT to get (IX+USR) into DE registers
-ABPASS      .EQU    13B4H           ;Function ABPASS to put output into AB register for return
-
-STACKTOP    .EQU    $2FFE           ; start (top) of stack (any pushes pre-decrement)
+DEINT       .EQU    0C47H           ;Function DEINT to get (IX+USR) into DE registers
+ABPASS      .EQU    13BDH           ;Function ABPASS to put output into AB register for return
 
 USRSTART    .EQU    $4000           ; start of USR(x) asm code
 
-CR          .EQU    0DH             ;CARRIAGE RETURN
-LF          .EQU    0AH             ;LINEFEED
-
-;
-;
-;******************************************************
-;       //// SIMPLE EXERCISE PROGRAM
-;******************************************************
-;
+;==============================================================================
+;       SIMPLE EXERCISE PROGRAM
 ;
 
-SCRPG   .EQU    26H             ;SCRATCH PAGE IS 2600H
+
+SCRPG   .EQU    28H             ;SCRATCH PAGE IS 2800H
 OP1     .EQU    00H             ;STARTING LOCATION OF OPERAND 1
 OP2     .EQU    OP1+4           ;STARTING LOCATION OF OPERAND 2
 RSULT   .EQU    OP2+4           ;STARTING LOCATION OF RESULT
@@ -102,7 +94,7 @@ TEST:
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, OP1               ;POINTER TO OPERAND 1
-        ld a, OP_ENT32_CMD      ;ENTER 32 bit (floating point from INPUT)
+        ld a, APU_OP_ENT32_CMD  ;ENTER 32 bit (floating point from INPUT)
         call APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
         
                                 ;EXAMPLE CODE - APU TWO OPERAND COMMAND
@@ -115,7 +107,7 @@ TEST:
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, OP2               ;POINTER TO OPERAND 2
-        ld a, OP_ENT32_CMD      ;ENTER 32 bit (floating point from INPUT)
+        ld a, APU_OP_ENT32_CMD  ;ENTER 32 bit (floating point from INPUT)
         call APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
         
         ld a, $10               ;COMMAND for FADD (floating add)
@@ -123,7 +115,7 @@ TEST:
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, RSULT             ;(D)E POINTER NOW RSULT
-        ld a, OP_REM32_CMD      ;REMOVE 32 bit OPERAND (floating point in this case)
+        ld a, APU_OP_REM32_CMD  ;REMOVE 32 bit OPERAND (floating point in this case)
         call APU_OP_LD
         
         call APU_ISR            ;KICK OFF APU PROCESS INTERRUPTS
@@ -147,19 +139,15 @@ TEST:
         
         JP TEST                 ;START AGAIN
 
-;
-;
-;******************************************************
-;       //// OUTPUT SUBROUTINE
-;******************************************************
-;
+;==============================================================================
+;       OUTPUT SUBROUTINE
 ;
 
 PRINT:
         LD A, (HL)              ;Get character from HL
         OR A                    ;Is it $00 ?
         RET Z                   ;Then RETurn on terminator
-        CALL TXA                ;PRINT IT
+        CALL TX0                ;PRINT IT
         INC HL                  ;Point to next character 
         JP PRINT                ;Continue until $00
 
@@ -174,5 +162,10 @@ HELLO:
 APU_HELLO:
         .BYTE   CR,LF
         .BYTE   "Am9511A Float ",0
-        .END
+
+;==============================================================================
+;
+                .END
+;
+;==============================================================================
 
