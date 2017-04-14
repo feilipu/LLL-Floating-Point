@@ -45,27 +45,7 @@ MAXCH   .EQU    077Q            ;MAXIMUM CHARACTERISTIC WITH SIGN EXTENDED
 ;TXA            RST 1           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
 ;RXA            RST 2           ;RETURN RX CHARACTER IN A, BLOCKING
 ;RXA_CHK        RST 3           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
-;HEXLOADR       RST 3           ;INITIATES INTEL HEX LOADING FUNCTION ON RX
 ;
-; Or calls directly to the functions can also be made, as below.
-
-
-                                ;RC2014 Function Calls from Nascom Basic Symbol Tables
-;TXA     .EQU    00C9H           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
-;RXA     .EQU    009FH           ;RETURN RX CHARACTER IN A, BLOCKING
-;RXA_CHK .EQU    0108H           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
-
-;DEINT   .EQU    0B57H           ;Function DEINT to get USR(x) into DE registers
-;ABPASS  .EQU    12CCH           ;Function ABPASS to put output into AB register for return
-
-
-                                ;YAZ180 Function Calls from Nascom Basic Symbol Tables
-TXA     .EQU    016BH           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
-RXA     .EQU    0154H           ;RETURN RX CHARACTER IN A, BLOCKING
-RXA_CHK .EQU    01A9H           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
-
-DEINT   .EQU    0C3FH           ;Function DEINT to get USR(x) into DE registers
-ABPASS  .EQU    13B4H           ;Function ABPASS to put output into AB register for return
 
 CR      .EQU    0DH             ;CARRIAGE RETURN
 LF      .EQU    0AH             ;LINEFEED
@@ -77,7 +57,7 @@ LF      .EQU    0AH             ;LINEFEED
 ;******************************************************
 ;
 ;
-SCRPG   .EQU    23H             ;SCRATCH PAGE IS 2300H
+SCRPG   .EQU    28H             ;SCRATCH PAGE IS 2800H
 OP1     .EQU    00H             ;STARTING LOCATION OF OPERAND 1
 OP2     .EQU    OP1+4           ;STARTING LOCATION OF OPERAND 2
 RSULT   .EQU    OP2+4           ;STARTING LOCATION OF RESULT
@@ -142,14 +122,14 @@ HELLO:
 ;
 OUTR:
         ANI     7FH             ;CLEAR HIGH BIT
-        CALL    TXA             ;OUTPUT THE CHARACTER TO TXA
+        RST     1               ;OUTPUT THE CHARACTER TO TXA
         RET
 
 PRINT:
         MOV     A, M            ;Get character from HL
         ORA     A               ;Is it $00 ?
         RZ                      ;Then RETurn on terminator
-        CALL    TXA             ;PRINT IT
+        RST     1               ;PRINT IT
         INX     H               ;Point to next character 
         JMP     PRINT           ;Continue until $00
 ;
@@ -169,7 +149,7 @@ PRINT:
 ; ROUTINE ECHOS THE CHARACTERS FORWARDED
 ;
 INP:
-        CALL    RXA             ;INPUT A CHARACTER FROM RX0
+        RST     2               ;INPUT A CHARACTER FROM RX0
         CPI     '+'             ;+?
         JZ      INP_DONE
         CPI     '-'             ;-?
@@ -186,7 +166,7 @@ SPACE:
         MVI     A, ' '          ;SEND A SPACE
 INP_DONE:
         PUSH    PSW
-        CALL    TXA
+        RST     1               ;ECHO VALID INPUT CHARACTER
         POP     PSW
         ORI     80H             ;SET HIGH BIT
         RET
@@ -2042,5 +2022,6 @@ ZROIT:
 ;
 ; END of code from LLNL PDF document
 ;
-        .END
+
+       .END
 

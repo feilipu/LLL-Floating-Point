@@ -4,8 +4,7 @@
 ; February / March 2017
 ;
 
-#include "d:/yaz180.h"          ;include the yaz180 header
-
+#include "d:/includes/yaz180.h" ;include the yaz180 header
 #include "d:/am9511a.asm"       ;include the Am9511A-1 library
 #include "d:/z80_lllf.asm"      ;include the LLL float library
 
@@ -41,12 +40,11 @@ SCR     .EQU    RSULT+4         ;STARTING LOCATION OF SCRATCH AREA
                                 ; NOS, TOS, poked to relevant addresses
                                 ; Result peeked from relevant address
 
-        call DEINT              ; get the USR(x) argument in de     
+        call DEINT              ; get the USR(x) argument in de
 
 TEST:
-
-        ld (STACKTOP), sp       ; store the old stack top, at top of new SP
-        ld sp, STACKTOP         ; set new Stack Pointer
+        LD      (STACKTOP), sp  ; store the old stack top, at top of new SP
+        LD      sp, STACKTOP    ; set new Stack Pointer, before decrement
 
         LD      HL, APU_HELLO   ;LOAD HL ADDRESS OF HELLO
         CALL    PRINT           ;PRINT IT
@@ -83,9 +81,9 @@ TEST:
 ;        CALL    DSQRT           ;SQUARE ROOT OF OP1 AND PLACE RESULT IN RSULT
 
                                 ;EXAMPLE CODE - APU ONE OPERAND COMMAND
-        
-        call APU_INIT           ;INITIALISE THE APU
-         
+
+        CALL    APU_INIT        ;INITIALISE THE APU
+
         LD H, SCRPG             ;SET H REGISTER TO RAM SCRATCH PAGE
         LD L, OP1               ;POINTER TO OPERAND 1
         LD C, SCR               ;SCRATCH AREA
@@ -94,9 +92,9 @@ TEST:
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, OP1               ;POINTER TO OPERAND 1
-        ld a, APU_OP_ENT32_CMD  ;ENTER 32 bit (floating point from INPUT)
-        call APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
-        
+        ld a, APU_OP_ENT32      ;ENTER 32 bit (floating point from INPUT)
+        CALL APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
+
                                 ;EXAMPLE CODE - APU TWO OPERAND COMMAND
 
         LD H, SCRPG             ;SET H REGISTER TO RAM SCRATCH PAGE
@@ -107,25 +105,21 @@ TEST:
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, OP2               ;POINTER TO OPERAND 2
-        ld a, APU_OP_ENT32_CMD  ;ENTER 32 bit (floating point from INPUT)
-        call APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
-        
-        ld a, $10               ;COMMAND for FADD (floating add)
-        call APU_CMD_LD         ;ENTER a COMMAND
+        LD A, APU_OP_ENT32      ;ENTER 32 bit (floating point from INPUT)
+        CALL APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
+
+;        LD A, $10               ;COMMAND for FADD (floating add)
+        LD A, $1A               ;COMMAND for PI (push PI)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, RSULT             ;(D)E POINTER NOW RSULT
-        ld a, APU_OP_REM32_CMD  ;REMOVE 32 bit OPERAND (floating point in this case)
-        call APU_OP_LD
-        
-        call APU_ISR            ;KICK OFF APU PROCESS INTERRUPTS
-;        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
-;        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS        
-;        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
-;        call APU_ISR            ;KICK OFF APU PROCESS WITHOUT INTERRUPTS
+        LD A, APU_OP_REM32      ;REMOVE 32 bit OPERAND (floating point in this case)
+        CALL APU_OP_LD
 
+        CALL APU_ISR            ;KICK OFF APU PROCESS INTERRUPTS
 
-        call APU_CHK_IDLE       ; one final check, because it could be doing a last command
+        CALL APU_CHK_IDLE       ; one final check, because it could be doing a last command
 
                                 ;EXAMPLE CODE - OUTPUT
 
@@ -134,10 +128,12 @@ TEST:
         LD C, SCR               ;SCRATCH AREA
 
         CALL CVRT               ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
+
+        LD SP, (STACKTOP)       ;reenable old SP
         
-        ld sp, (STACKTOP)       ;recover the old Stack Pointer
+        RET
         
-        JP TEST                 ;START AGAIN
+;        JP TEST                 ;START AGAIN
 
 ;==============================================================================
 ;       OUTPUT SUBROUTINE
@@ -147,13 +143,14 @@ PRINT:
         LD A, (HL)              ;Get character from HL
         OR A                    ;Is it $00 ?
         RET Z                   ;Then RETurn on terminator
-        CALL TX0                ;PRINT IT
+        RST 08H                 ;PRINT IT
         INC HL                  ;Point to next character 
         JP PRINT                ;Continue until $00
 
 HERE:
         .BYTE   CR,LF
-        .BYTE   "here!",0
+        .BYTE   "got here!"
+        .BYTE   CR,LF,0
 
 HELLO:
         .BYTE   CR,LF

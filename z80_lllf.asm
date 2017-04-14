@@ -49,20 +49,11 @@ MAXCH   .EQU    077Q            ;MAXIMUM EXPONENT WITH SIGN EXTENDED
 ;RX0            RST 2           ;RETURN RX CHARACTER IN A, BLOCKING
 ;RX0_CHK        RST 3           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
 ;
-; Or calls directly to the functions can also be made, as below.
-
-                                ;YAZ180 Function Calls from Nascom Basic Symbol Tables
-TX0     .EQU    016BH           ;EXPECTS CHARACTER TO TX IN A, BLOCKING
-RX0     .EQU    0154H           ;RETURN RX CHARACTER IN A, BLOCKING
-RX0_CHK .EQU    01A9H           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
-
-;
 ;******************************************************
 ;       //// LIBRARY ORIGIN
 ;******************************************************
 ;
-        .ORG    3000H           ;LIBRARY ORIGIN FOR YAZ180 DURING TESTING
-
+        .ORG    3000H           ;LIBRARY ORIGIN
 ;
 ;******************************************************
 ;       //// OUTPUT SUBROUTINE
@@ -73,7 +64,7 @@ RX0_CHK .EQU    01A9H           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN 
 ;
 OUTR:
         AND     7FH             ;CLEAR HIGH BIT
-        CALL    TX0             ;OUTPUT THE CHARACTER TO TXA
+        RST     08H             ;OUTPUT THE CHARACTER TO TX0
         RET
 ;
 ;
@@ -81,8 +72,8 @@ OUTR:
 ;       //// INPUT SUBROUTINES
 ;******************************************************
 ;
-; ROUTINE TO INPUT CHAR FROM RXA INPUT BUFFER
-; RXA LOOPS TILL A CHARACTER IS AVAILABLE
+; ROUTINE TO INPUT CHAR FROM INPUT BUFFER
+; RST 10H LOOPS TILL A CHARACTER IS AVAILABLE
 ; INP RETURNS CHARACTER WITH HIGH BIT SET
 ; IN REGISTER A.
 ;
@@ -92,7 +83,7 @@ OUTR:
 ; ROUTINE ECHOS THE CHARACTERS FORWARDED
 ;
 INP:
-        CALL    RX0             ;INPUT A CHARACTER FROM RX0
+        RST     10H             ;INPUT A CHARACTER FROM RX0
         CP      '+'             ;+?
         JP      Z,INP_DONE
         CP      '-'             ;-?
@@ -109,7 +100,7 @@ SPACE:
         LD      A,' '           ;SEND A SPACE
 INP_DONE:
         PUSH    AF
-        CALL    TX0
+        RST     08H
         POP     AF
         OR      80H             ;SET HIGH BIT
         RET
@@ -1949,5 +1940,5 @@ ZROIT:
 ; END of code from LLNL PDF document
 ;
 
-        .END
+       .END
 
