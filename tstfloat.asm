@@ -118,6 +118,7 @@ TEST:
         CALL APU_OP_LD
 
         CALL APU_ISR            ;KICK OFF APU PROCESS INTERRUPTS
+;        CALL APU_ISR            ;KICK OFF APU PROCESS INTERRUPTS
 
         CALL APU_CHK_IDLE       ; one final check, because it could be doing a last command
 

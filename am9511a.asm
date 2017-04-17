@@ -238,7 +238,6 @@ APU_INIT_LOOP:
 ;       APU_CHK_IDLE
 ;       Confirms whether the APU is idle
 ;       Loop until it returns ready
-;       For Interrupt driven service, not useful.
 ;       Operand Entry and Removal takes little time,
 ;       and we'll be interrupted for Command entry.
 
@@ -247,8 +246,16 @@ APU_CHK_IDLE:
         push bc
 
 APU_CHK_LOOP:
+        ld a, (APUCMDBufUsed)   ; Get the number of bytes in the COMMAND buffer
+
+        ld bc, PIOB             ; 82C55 IO PORT B address in BC XXX
+        out (c),a               ; put COMMANDS remaining onto Port B
+
+        or a                    ; check whether COMMAND buffer is empty
+        jr nz, APU_CHK_LOOP     ; COMMAND buffer not empty, so wait
+
         ld a, (APUStatus)       ; get the status of the APU
-        and a                   ; check it is zero (NOP)
+        or a                    ; check it is zero (NOP)
         jr nz, APU_CHK_LOOP     ; otherwise wait
 
         ld bc, APUCNTL          ; the address of the APU control port in bc
