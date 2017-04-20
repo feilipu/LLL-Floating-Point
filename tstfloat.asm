@@ -49,6 +49,9 @@ TEST:
         LD      HL, APU_HELLO   ;LOAD HL ADDRESS OF HELLO
         CALL    PRINT           ;PRINT IT
 
+        LD      HL, PYTHAGORAS  ;LOAD HL ADDRESS OF PYTHAGORAS
+        CALL    PRINT           ;PRINT IT
+
                                 ;EXAMPLE CODE - ONE OPERAND COMMAND
 
 ;        LD      H,SCRPG         ;SET H REGISTER TO RAM SCRATCH PAGE
@@ -94,7 +97,7 @@ TEST:
         LD E, OP1               ;POINTER TO OPERAND 1
         ld a, APU_OP_ENT32      ;ENTER 32 bit (floating point from INPUT)
         CALL APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
-
+        
                                 ;EXAMPLE CODE - APU TWO OPERAND COMMAND
 
         LD H, SCRPG             ;SET H REGISTER TO RAM SCRATCH PAGE
@@ -108,8 +111,25 @@ TEST:
         LD A, APU_OP_ENT32      ;ENTER 32 bit (floating point from INPUT)
         CALL APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
 
-;        LD A, $10               ;COMMAND for FADD (floating add)
-        LD A, $1A               ;COMMAND for PI (push PI)
+        LD A, 17h               ;COMMAND for PTOF (push floating )
+        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+        LD A, 12h               ;COMMAND for FMUL (floating multiply)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+        LD A, 19h               ;COMMAND for XCHF (swap float)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+        LD A, 17h               ;COMMAND for PTOF (push floating )
+        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+        LD A, 12h               ;COMMAND for FMUL (floating multiply)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+        LD A, 10h               ;COMMAND for FADD (floating add)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+        LD A, 01h               ;COMMAND for SQRT (floating square root)
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
@@ -118,9 +138,8 @@ TEST:
         CALL APU_OP_LD
 
         CALL APU_ISR            ;KICK OFF APU PROCESS INTERRUPTS
-;        CALL APU_ISR            ;KICK OFF APU PROCESS INTERRUPTS
 
-        CALL APU_CHK_IDLE       ; one final check, because it could be doing a last command
+        CALL APU_CHK_IDLE       ;check, because it could be doing a last command
 
                                 ;EXAMPLE CODE - OUTPUT
 
@@ -148,11 +167,6 @@ PRINT:
         INC HL                  ;Point to next character 
         JP PRINT                ;Continue until $00
 
-HERE:
-        .BYTE   CR,LF
-        .BYTE   "got here!"
-        .BYTE   CR,LF,0
-
 HELLO:
         .BYTE   CR,LF
         .BYTE   "LLL Float ",0
@@ -161,6 +175,9 @@ APU_HELLO:
         .BYTE   CR,LF
         .BYTE   "Am9511A Float ",0
 
+PYTHAGORAS:
+        .BYTE   CR,LF
+        .BYTE   "SQRT[ a^2 + b^2 ] ",0
 ;==============================================================================
 ;
                 .END

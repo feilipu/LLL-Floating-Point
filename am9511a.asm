@@ -51,10 +51,13 @@ APU_ISR:
         push bc
         push de
         push hl
-        
+
         xor a                   ; Set internal clock = crystal x 1 = 18.432MHz
                                 ; That makes the PHI 9.216MHz
         out0 (CMR), a           ; CPU Clock Multiplier Reg (CMR)
+
+        ld a, DCNTL_IWI1        ; DMA/Wait Control Reg Set I/O Wait States
+        out0 (DCNTL), a         ; 0 Memory Wait & 3 I/O Wait
 
 APU_ISR_ENTRY:
         ld a, (APUCMDBufUsed)   ; check whether we have a command to do
@@ -64,9 +67,6 @@ APU_ISR_ENTRY:
         ld hl, (APUCMDOutPtr)   ; get the pointer to place where we pop the COMMAND
         ld a, (hl)              ; get the COMMAND byte
         ld (APUStatus), a       ; save the COMMAND (as a status byte)
-
-        ld bc, PIOB             ; 82C55 IO PORT B address in BC XXX
-        out (c),a               ; put COMMAND onto Port B
 
         inc l                   ; move the COMMAND pointer low byte along, 0xFF rollover
         ld (APUCMDOutPtr), hl   ; write where the next byte should be popped
@@ -85,10 +85,6 @@ APU_ISR_ENTRY:
         ld bc, APUCNTL          ; the address of the APU control port in BC
         out (c), a              ; load the COMMAND
 
-        in0 a, (ITC)            ; Get INT/TRAP Control Register (ITC)
-        or  ITC_ITE0            ; Mask in INT0
-        out0 (ITC), a           ; Enable external interrupt INT0
-
 APU_ISR_EXIT:
         pop hl                  ; recover HL, etc
         pop de
@@ -104,7 +100,7 @@ APU_ISR_OP_ENT:
         ld d, (hl)              ; read the POINTER high byte from the APUPTROutPtr
         inc l
         ld (APUPTROutPtr), hl   ; write where the next POINTER should be read
-                 
+
         ld hl, APUPTRBufUsed    ; atomic decrement of POINTER count
         dec (hl)
         dec (hl)
@@ -121,7 +117,7 @@ APU_ISR_OP_ENT:
 
         outi                    ; output last two bytes of 32 bit OPERAND
         outi
-        
+
         jr APU_ISR_ENTRY        ; go back to get another COMMAND
 
 APU_ISR_OP_REM:
@@ -131,7 +127,7 @@ APU_ISR_OP_REM:
         ld d, (hl)              ; read the POINTER high byte from the APUPTROutPtr
         inc l
         ld (APUPTROutPtr), hl   ; write where the next POINTER should be read
-                 
+
         ld hl, APUPTRBufUsed    ; atomic decrement of OPERAND POINTER count
         dec (hl)
         dec (hl)
@@ -152,18 +148,16 @@ APU_ISR_OP_REM:
 
 APU_ISR_REM16:
         ind                     ; get 16 bit OPERAND
-        ind                     ; There is only ever one result
+        ind
+
+        jr APU_ISR_ENTRY        ; go back to get another COMMAND
 
 APU_ISR_END:                    ; We're done
-        in0 a, (ITC)            ; Get INT/TRAP Control Register (ITC)
-        and ~ITC_ITE0           ; Mask out INT0   
-        out0 (ITC), a           ; Disable external interrupt INT0
-        
         xor a
         ld (APUStatus), a       ; Set the status back to idle (NOP)
 
-        ld bc, PIOB             ; 82C55 IO PORT B address in BC XXX
-        out (c),a               ; put COMMAND onto Port B
+        ld a, DCNTL_IWI0        ; DMA/Wait Control Reg Set I/O Wait States
+        out0 (DCNTL), a         ; 0 Memory Wait & 2 I/O Wait
 
                                 ; Set internal clock = crystal x 2 = 36.864MHz
         ld a, CMR_X2            ; Set Hi-Speed flag
@@ -171,7 +165,6 @@ APU_ISR_END:                    ; We're done
 
         jr APU_ISR_EXIT         ; We're done here
 
-        
 ;==================================================================================
 ;
 ; CODE SECTION
@@ -186,7 +179,7 @@ APU_INIT:
         push bc
         push de
         push hl
-  
+
         LD  HL, APUCMDBuf       ; Initialise COMMAND Buffer
         LD (APUCMDInPtr), HL
         LD (APUCMDOutPtr), HL
@@ -217,11 +210,15 @@ APU_INIT:
         LDIR
 
         LD (APUStatus), A       ; Set APU status to idle (NOP)
-        
+
         ld hl, INT0_APU_ISR     ; load our origin into the jump table 
                                 ; initially there is a RETI there
         ld (INT_INT0_ADDR), hl  ; load the address of the APU INT0 jump
-        
+
+        in0 a, (ITC)            ; Get INT/TRAP Control Register (ITC)
+        or ITC_ITE0             ; Mask in INT0
+        out0 (ITC), a           ; Enable external interrupt INT0
+
 APU_INIT_LOOP:
         ld bc, APUCNTL          ; the address of the APU Control port in bc
         in a, (c)               ; read the APU
@@ -247,9 +244,6 @@ APU_CHK_IDLE:
 
 APU_CHK_LOOP:
         ld a, (APUCMDBufUsed)   ; Get the number of bytes in the COMMAND buffer
-
-        ld bc, PIOB             ; 82C55 IO PORT B address in BC XXX
-        out (c),a               ; put COMMANDS remaining onto Port B
 
         or a                    ; check whether COMMAND buffer is empty
         jr nz, APU_CHK_LOOP     ; COMMAND buffer not empty, so wait
