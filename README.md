@@ -39,3 +39,5 @@ Note the title of the LLL document is *8008 and 8080....*. The 8080 code they pr
 To enable the code to be integrated into Z80 targets, sadly, the library has been translated into Z80 mnemonics.
 The tool used was the [z88dk 8080->Z80 awk tool](https://github.com/z88dk/z88dk/tree/master/support/8080). The translation was [almost perfect](https://github.com/feilipu/LLL-Floating-Point/commit/b30d59f84afe3667187d0e9c5634b93ae3c00ed0).
 
+A driver for the AM9511A-1 has been written `am9511a.asm` which uses the INT0 interface to initiate commands. Translation from TTY to float is done by the `z80_lllf.asm` libarary. A very simple test program `tstfloat.asm` has been written to test both LLL Float and the Am9511A float capabilities.
+

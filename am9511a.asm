@@ -56,9 +56,6 @@ APU_ISR:
                                 ; That makes the PHI 9.216MHz
         out0 (CMR), a           ; CPU Clock Multiplier Reg (CMR)
 
-        ld a, DCNTL_IWI1        ; DMA/Wait Control Reg Set I/O Wait States
-        out0 (DCNTL), a         ; 0 Memory Wait & 3 I/O Wait
-
 APU_ISR_ENTRY:
         ld a, (APUCMDBufUsed)   ; check whether we have a command to do
         or a                    ; zero?
@@ -83,7 +80,7 @@ APU_ISR_ENTRY:
 
         ld a, (APUStatus)       ; recover the COMMAND from Status
         ld bc, APUCNTL          ; the address of the APU control port in BC
-        out (c), a              ; load the COMMAND
+        out (c), a              ; load the COMMAND, and do it
 
 APU_ISR_EXIT:
         pop hl                  ; recover HL, etc
@@ -154,10 +151,7 @@ APU_ISR_REM16:
 
 APU_ISR_END:                    ; We're done
         xor a
-        ld (APUStatus), a       ; Set the status back to idle (NOP)
-
-        ld a, DCNTL_IWI0        ; DMA/Wait Control Reg Set I/O Wait States
-        out0 (DCNTL), a         ; 0 Memory Wait & 2 I/O Wait
+        ld (APUStatus), a       ; Set the COMMAND status back to idle (NOP)
 
                                 ; Set internal clock = crystal x 2 = 36.864MHz
         ld a, CMR_X2            ; Set Hi-Speed flag
@@ -188,7 +182,7 @@ APU_INIT:
         LD (APUPTRInPtr), HL
         LD (APUPTROutPtr), HL
 
-        XOR A                   ; clear A regiser to 0
+        XOR A                   ; clear A register to 0
 
         LD (APUCMDBufUsed), A   ; 0 both Buffer counts
         LD (APUPTRBufUsed), A
@@ -210,6 +204,9 @@ APU_INIT:
         LDIR
 
         LD (APUStatus), A       ; Set APU status to idle (NOP)
+
+        ld a, DCNTL_IWI1        ; DMA/Wait Control Reg Set I/O Wait States
+        out0 (DCNTL), a         ; 0 Memory Wait & 3 I/O Wait
 
         ld hl, INT0_APU_ISR     ; load our origin into the jump table 
                                 ; initially there is a RETI there

@@ -13,10 +13,10 @@
 ;       RC2014 & YAZ180 DEFINES
 ;
 
-DEINT       .EQU    0C47H           ;Function DEINT to get (IX+USR) into DE registers
-ABPASS      .EQU    13BDH           ;Function ABPASS to put output into AB register for return
+DEINT   .EQU    0C47H           ;Function DEINT to get (IX+USR) into DE registers
+ABPASS  .EQU    13BDH           ;Function ABPASS to put output into AB register for return
 
-USRSTART    .EQU    $4000           ; start of USR(x) asm code
+USRSTART    .EQU    $4000       ; start of USR(x) asm code
 
 ;==============================================================================
 ;       SIMPLE EXERCISE PROGRAM
@@ -33,7 +33,7 @@ SCR     .EQU    RSULT+4         ;STARTING LOCATION OF SCRATCH AREA
                                 ; ORIGIN FOR YAZ180 DURING TESTING
         .org USRSTART           ; start from 'X' jump, Basic prompt
 
-                                ; Am9511A I/O is from $C000 to $C001
+                                ; Am9511A I/O is from $Cn00 to $Cn01
 
                                 ; assume the operand byte code in function call
                                 ; return 16 bit result (if relevant)
@@ -87,6 +87,16 @@ TEST:
 
         CALL    APU_INIT        ;INITIALISE THE APU
 
+        XOR A                   ;clear A register to 0
+        LD H, SCRPG             ;SET H REGISTER TO RAM SCRATCH PAGE
+        LD L, OP1               ;POINTER TO OPERAND 1
+        LD (HL), A              ;CLEAR SCRATCH AREA
+        LD D, H
+        LD E, L
+        INC DE
+        LD BC, 10H              ;CLEAR 16 BYTES
+        LDIR
+
         LD H, SCRPG             ;SET H REGISTER TO RAM SCRATCH PAGE
         LD L, OP1               ;POINTER TO OPERAND 1
         LD C, SCR               ;SCRATCH AREA
@@ -123,14 +133,23 @@ TEST:
         LD A, 17h               ;COMMAND for PTOF (push floating )
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
+;        LD A, 13h               ;COMMAND for FDIV (floating divide)
+;        CALL APU_CMD_LD         ;ENTER a COMMAND
+
         LD A, 12h               ;COMMAND for FMUL (floating multiply)
         CALL APU_CMD_LD         ;ENTER a COMMAND
+
+;        LD A, 11h               ;COMMAND for FSUB (floating subtract)
+;        CALL APU_CMD_LD         ;ENTER a COMMAND
 
         LD A, 10h               ;COMMAND for FADD (floating add)
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
         LD A, 01h               ;COMMAND for SQRT (floating square root)
         CALL APU_CMD_LD         ;ENTER a COMMAND
+
+;        LD A, 1Ah               ;COMMAND for PUPI (push Pi)
+;        CALL APU_CMD_LD         ;ENTER a COMMAND
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, RSULT             ;(D)E POINTER NOW RSULT
@@ -148,6 +167,9 @@ TEST:
         LD C, SCR               ;SCRATCH AREA
 
         CALL CVRT               ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
+
+        LD      HL, NEW_LINE    ;LOAD HL ADDRESS OF NEW_LINE
+        CALL    PRINT           ;PRINT IT
 
         LD SP, (STACKTOP)       ;reenable old SP
         
@@ -178,9 +200,13 @@ APU_HELLO:
 PYTHAGORAS:
         .BYTE   CR,LF
         .BYTE   "SQRT[ a^2 + b^2 ] ",0
+
+NEW_LINE:
+        .BYTE   CR,LF,0
+
 ;==============================================================================
 ;
-                .END
+        .END
 ;
 ;==============================================================================
 
