@@ -121,32 +121,32 @@ TEST:
         LD A, APU_OP_ENT32      ;ENTER 32 bit (floating point from INPUT)
         CALL APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
 
-        LD A, 17h               ;COMMAND for PTOF (push floating )
-        CALL APU_CMD_LD         ;ENTER a COMMAND
-
-        LD A, 12h               ;COMMAND for FMUL (floating multiply)
-        CALL APU_CMD_LD         ;ENTER a COMMAND
-
-        LD A, 19h               ;COMMAND for XCHF (swap float)
-        CALL APU_CMD_LD         ;ENTER a COMMAND
-
-        LD A, 17h               ;COMMAND for PTOF (push floating )
-        CALL APU_CMD_LD         ;ENTER a COMMAND
-
-;        LD A, 13h               ;COMMAND for FDIV (floating divide)
+;        LD A, 17h               ;COMMAND for PTOF (push floating )
 ;        CALL APU_CMD_LD         ;ENTER a COMMAND
 
-        LD A, 12h               ;COMMAND for FMUL (floating multiply)
+;        LD A, 12h               ;COMMAND for FMUL (floating multiply)
+;        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+;        LD A, 19h               ;COMMAND for XCHF (swap float)
+;        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+;        LD A, 17h               ;COMMAND for PTOF (push floating )
+;        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+        LD A, 13h               ;COMMAND for FDIV (floating divide)
         CALL APU_CMD_LD         ;ENTER a COMMAND
+
+;        LD A, 12h               ;COMMAND for FMUL (floating multiply)
+;        CALL APU_CMD_LD         ;ENTER a COMMAND
 
 ;        LD A, 11h               ;COMMAND for FSUB (floating subtract)
 ;        CALL APU_CMD_LD         ;ENTER a COMMAND
 
-        LD A, 10h               ;COMMAND for FADD (floating add)
-        CALL APU_CMD_LD         ;ENTER a COMMAND
+;        LD A, 10h               ;COMMAND for FADD (floating add)
+;        CALL APU_CMD_LD         ;ENTER a COMMAND
 
-        LD A, 01h               ;COMMAND for SQRT (floating square root)
-        CALL APU_CMD_LD         ;ENTER a COMMAND
+;        LD A, 01h               ;COMMAND for SQRT (floating square root)
+;        CALL APU_CMD_LD         ;ENTER a COMMAND
 
 ;        LD A, 1Ah               ;COMMAND for PUPI (push Pi)
 ;        CALL APU_CMD_LD         ;ENTER a COMMAND
@@ -173,7 +173,10 @@ TEST:
 
         LD SP, (STACKTOP)       ;reenable old SP
         
-        RET
+        ld a, (APUError)        ;any errors ?
+        ld b, a
+        xor a
+        jp ABPASS               ;output them
         
 ;        JP TEST                 ;START AGAIN
 
