@@ -206,7 +206,7 @@ APU_INIT:
         LD D, H
         LD E, L
         INC DE
-        LD BC, APU_CMD_BUFSIZE+1
+        LD BC, APU_CMD_BUFSIZE
         LDIR
 
         LD (APUPTRBuf), A       ; clear OPERAND POINTER Buffer
@@ -214,7 +214,7 @@ APU_INIT:
         LD D, H
         LD E, L
         INC DE
-        LD BC, APU_PTR_BUFSIZE+1
+        LD BC, APU_PTR_BUFSIZE
         LDIR
 
         ld (APUStatus), a       ; set APU status to idle (NOP)
@@ -275,7 +275,7 @@ APU_OP_LD:
         ld l, a                 ; store COMMAND so we don't clobber it
 
         ld a, (APUCMDBufUsed)   ; Get the number of bytes in the COMMAND buffer
-        cp APU_CMD_BUFSIZE      ; check whether there is space in the buffer
+        cp APU_CMD_BUFSIZE-1    ; check whether there is space in the buffer
         jr nc, APU_OP_EXIT      ; COMMAND buffer full, so exit
 
         ld a, l                 ; recover the operand entry COMMAND
@@ -289,7 +289,7 @@ APU_OP_LD:
         inc (hl)                ; atomic increment of COMMAND count
 
         ld a, (APUPTRBufUsed)   ; Get the number of bytes in the OPERAND PTR buffer
-        cp APU_PTR_BUFSIZE-1    ; check whether there is space for a OPERAND PTR
+        cp APU_PTR_BUFSIZE-2    ; check whether there is space for a OPERAND PTR
         jr nc, APU_OP_EXIT      ; buffer full, so exit
         
         ld hl, (APUPTRInPtr)    ; get the pointer to where we poke
@@ -316,7 +316,7 @@ APU_CMD_LD:
         ld l, a                 ; store COMMAND so we don't clobber it
 
         ld a, (APUCMDBufUsed)   ; Get the number of bytes in the COMMAND buffer
-        cp APU_CMD_BUFSIZE      ; check whether there is space in the buffer
+        cp APU_CMD_BUFSIZE-1    ; check whether there is space in the buffer
         jr nc, APU_CMD_EXIT     ; COMMAND buffer full, so exit
 
         ld a, l                 ; recover the operand entry COMMAND
