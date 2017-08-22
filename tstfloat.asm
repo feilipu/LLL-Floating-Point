@@ -3,35 +3,50 @@
 ; Phillip Stevens @feilipu https://feilipu.me
 ; February / March 2017
 ;
+; Converted to z88dk z80asm for RC2014 and YAZ180 by
+; Phillip Stevens @feilipu https://feilipu.me
+; August 2017
+;
 
-#include "d:/includes/yaz180.h" ;include the yaz180 header
-#include "d:/am9511a.asm"       ;include the Am9511A-1 library
-#include "d:/z80_lllf.asm"      ;include the LLL float library
+INCLUDE "config_yaz180_private.inc"
+
+
+
+EXTERN  APU_ISR
+EXTERN  APU_INIT, APU_CHK_IDLE
+EXTERN  APU_OP_LD, APU_CMD_LD
+
+EXTERN  INPUT,CVRT
+
+EXTERN  APUError
 
 ;
 ;==============================================================================
 ;       RC2014 & YAZ180 DEFINES
 ;
 
-DEINT   .EQU    0C47H           ;Function DEINT to get (IX+USR) into DE registers
-ABPASS  .EQU    13BDH           ;Function ABPASS to put output into AB register for return
+DEFC    DEINT   =   $0C47       ;Function DEINT to get (IX+USR) into DE registers
+DEFC    ABPASS  =   $13BD       ;Function ABPASS to put output into AB register for return
 
-USRSTART    .EQU    $4000       ; start of USR(x) asm code
+DEFC    STACKTOP        =   $3FFE   ; start of a global stack (any pushes pre-decrement)
 
 ;==============================================================================
 ;       SIMPLE EXERCISE PROGRAM
 ;
 
-
-SCRPG   .EQU    28H             ;SCRATCH PAGE IS 2800H
-OP1     .EQU    00H             ;STARTING LOCATION OF OPERAND 1
-OP2     .EQU    OP1+4           ;STARTING LOCATION OF OPERAND 2
-RSULT   .EQU    OP2+4           ;STARTING LOCATION OF RESULT
-SCR     .EQU    RSULT+4         ;STARTING LOCATION OF SCRATCH AREA
+DEFC    SCRPG   =   $28         ;SCRATCH PAGE IS 2800H
+DEFC    OP1     =   $00         ;STARTING LOCATION OF OPERAND 1
+DEFC    OP2     =   OP1+$04     ;STARTING LOCATION OF OPERAND 2
+DEFC    RSULT   =   OP2+$04     ;STARTING LOCATION OF RESULT
+DEFC    SCR     =   RSULT+$04   ;STARTING LOCATION OF SCRATCH AREA
 
 
                                 ; ORIGIN FOR YAZ180 DURING TESTING
-        .org USRSTART           ; start from 'X' jump, Basic prompt
+SECTION code_user               ; start from 'X' jump, Basic prompt
+
+PUBLIC _main
+
+_main:
 
                                 ; Am9511A I/O is from $Cn00 to $Cn01
 
@@ -105,7 +120,7 @@ TEST:
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, OP1               ;POINTER TO OPERAND 1
-        ld a, APU_OP_ENT32      ;ENTER 32 bit (floating point from INPUT)
+        ld a, __IO_APU_OP_ENT32 ;ENTER 32 bit (floating point from INPUT)
         CALL APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
         
                                 ;EXAMPLE CODE - APU TWO OPERAND COMMAND
@@ -118,7 +133,7 @@ TEST:
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, OP2               ;POINTER TO OPERAND 2
-        LD A, APU_OP_ENT32      ;ENTER 32 bit (floating point from INPUT)
+        LD A, __IO_APU_OP_ENT32 ;ENTER 32 bit (floating point from INPUT)
         CALL APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
 
 ;        LD A, 17h               ;COMMAND for PTOF (push floating )
@@ -153,7 +168,7 @@ TEST:
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, RSULT             ;(D)E POINTER NOW RSULT
-        LD A, APU_OP_REM32      ;REMOVE 32 bit OPERAND (floating point in this case)
+        LD A, __IO_APU_OP_REM32 ;REMOVE 32 bit OPERAND (floating point in this case)
         CALL APU_OP_LD
 
         CALL APU_ISR            ;KICK OFF APU PROCESS INTERRUPTS
@@ -192,24 +207,14 @@ PRINT:
         INC HL                  ;Point to next character 
         JP PRINT                ;Continue until $00
 
-HELLO:
-        .BYTE   CR,LF
-        .BYTE   "LLL Float ",0
+section rodata_user
 
-APU_HELLO:
-        .BYTE   CR,LF
-        .BYTE   "Am9511A Float ",0
-
-PYTHAGORAS:
-        .BYTE   CR,LF
-        .BYTE   "SQRT[ a^2 + b^2 ] ",0
-
-NEW_LINE:
-        .BYTE   CR,LF,0
+HELLO:      DEFM    CHAR_CR,CHAR_LF,"LLL Float ",0
+APU_HELLO:  DEFM    CHAR_CR,CHAR_LF,"Am9511A Float ",0
+PYTHAGORAS: DEFM    CHAR_CR,CHAR_LF,"SQRT[ a^2 + b^2 ] ",0
+NEW_LINE:   DEFM    CHAR_CR,CHAR_LF,0
 
 ;==============================================================================
-;
-        .END
 ;
 ;==============================================================================
 

@@ -33,9 +33,13 @@
 ; Phillip Stevens @feilipu https://feilipu.me
 ; February / March 2017
 ;
+; Converted to z88dk z80asm for RC2014 and YAZ180 by
+; Phillip Stevens @feilipu https://feilipu.me
+; August 2017
+;
 
-MINCH   .EQU    300Q            ;MINIMUM EXPONENT WITH SIGN EXTENDED
-MAXCH   .EQU    077Q            ;MAXIMUM EXPONENT WITH SIGN EXTENDED
+DEFC    MINCH   =   $C0 ;300Q   ;MINIMUM EXPONENT WITH SIGN EXTENDED
+DEFC    MAXCH   =   $3F ;077Q   ;MAXIMUM EXPONENT WITH SIGN EXTENDED
 
 ;
 ;
@@ -53,12 +57,15 @@ MAXCH   .EQU    077Q            ;MAXIMUM EXPONENT WITH SIGN EXTENDED
 ;       //// LIBRARY ORIGIN
 ;******************************************************
 ;
-        .ORG    3000H           ;LIBRARY ORIGIN
+SECTION     code_driver         ;LIBRARY ORIGIN
 ;
 ;******************************************************
 ;       //// OUTPUT SUBROUTINE
 ;******************************************************
 ;
+
+PUBLIC  CVRT
+
 ; OUTR OUTPUT FROM CVRT INTO TX0 OUTPUT BUFFER
 ; ALL REG'S MAINTAINED
 ;
@@ -72,6 +79,9 @@ OUTR:
 ;       //// INPUT SUBROUTINES
 ;******************************************************
 ;
+
+PUBLIC  INPUT
+
 ; ROUTINE TO INPUT CHAR FROM INPUT BUFFER
 ; RST 10H LOOPS TILL A CHARACTER IS AVAILABLE
 ; INP RETURNS CHARACTER WITH HIGH BIT SET
@@ -159,7 +169,7 @@ GOON:
 CRIN:
         CALL    CFCHE           ;GET A=CHAR(H,L), E=CHAR(H,B)
         SUB     E               ;NEW CHAR = CHAR(DIVIDEND) - CHAR(DVISIOR)
-        CP      177Q            ;CHECK MAX POSITIVE NUMBER
+        CP      $7F  ;177Q      ;CHECK MAX POSITIVE NUMBER
         JP      Z,OFLWC         ;JUMP ON OVERFLOW
         ADD     A,1             ;ADD 1 SINCE WE DID NOT LEFTSHIFT
         CALL    CCHK            ;CHECK AND STORE EXPONENT
@@ -189,7 +199,7 @@ LADD:
 ;       BASE 11 USED FOR SCRATCH
 ;
 LSUB:
-        LD      A,200Q          ;/****SET UP TO SUBTRACT
+        LD      A,$80  ;200Q    ;/****SET UP TO SUBTRACT
 ;
 LADS:
         CALL    ACPR            ;SAVE ENTRY PNT AT BASE 6
@@ -430,7 +440,7 @@ INTR:
         LD      L,E             ;RESTORE LPTR
         CALL    CFCHE           ;OTHERWISE SET A=CHAR(H,L), E=CHAR(H,B)
         ADD     A,E             ;CHAR(RESULT) = CHAR(H,L) + CHAR(H,B)
-        CP      200Q            ;CHECK FOR SMALLEST NEGATIVE NUMBER
+        CP      $80  ;200Q      ;CHECK FOR SMALLEST NEGATIVE NUMBER
         JP      Z,UFLWC         ;IF SO THEN UNDERFLOW
         SUB     1               ;SUBTRACT 1 TO COMPENSATE FOR NORMALIZE
         CALL    CCHK            ;CHECK EXPONENT AND STORE IT
@@ -695,9 +705,9 @@ GCHAR:
         INC     L               ;MAKE (H,L) POINT TO CHAR
         INC     L               ;MAKE (H,L) POINT TO CHAR
         LD      A,(HL)          ;SET A=CHAR + MANTISSA SIGN
-        AND     177Q            ;GET RID OF MANTISSA SIGN BIT
-        ADD     A,100Q          ;PROPAGATE CHAR SIGN INTO LEFTMOST BIT
-        XOR     100Q            ;RESTORE ORIGINAL CHAR SIGN BIT
+        AND     $7F  ;177Q      ;GET RID OF MANTISSA SIGN BIT
+        ADD     A,$40  ;100Q    ;PROPAGATE CHAR SIGN INTO LEFTMOST BIT
+        XOR     $40  ;100Q      ;RESTORE ORIGINAL CHAR SIGN BIT
         RET                     ;RETURN WITH (H,L) POINTING TO THE
                                 ;CHAR = ORIGINAL (H,L)+3
                                 ;SOMEONE ELSE WILL CLEAN UP
@@ -779,38 +789,38 @@ CCMP:
 ;
 
 WUND:
-        LD      D,100Q          ;LOAD EXPONENT INTO D REGISTER
+        LD      D,$40  ;100Q    ;LOAD EXPONENT INTO D REGISTER
         CALL    WCHAR           ;WRITE EXPONENT
 UFLW1:
         LD      A,0             ;LOAD MANTISSA VALUE
                                 ;WE ASSUME HERE THAT ALL BYTES OF MANTISSA
                                 ;ARE THE SAME
         CALL    WMANT           ;WRITE THE MANTISSA
-        LD      A,377Q          ;SET ACCUMULATOR TO FLAG
+        LD      A,$FF  ;377Q    ;SET ACCUMULATOR TO FLAG
         OR      A               ;SET FLAGS PROPERLY
         RET                     ;RETURN (WMANT RESTORED (H,L))
 
 WOVR:
-        LD      D,77Q           ;LOAD EXPONENT INTO D REGISTER
+        LD      D,$3F  ;77Q     ;LOAD EXPONENT INTO D REGISTER
         CALL    WCHAR           ;WRITE EXPONENT
 OFLW1:
-        LD      A,377Q          ;LOAD MANTISSA VALUE
+        LD      A,$FF  ;377Q    ;LOAD MANTISSA VALUE
                                 ;WE ASSUME HERE THAT ALL BYTES OF MANTISSA
                                 ;ARE THE SAME
         CALL    WMANT           ;WRITE THE MANTISSA
-        LD      A,177Q          ;SET ACCUMULATOR TO FLAG
+        LD      A,$7F  ;177Q    ;SET ACCUMULATOR TO FLAG
         OR      A               ;SET FLAGS PROPERLY
         RET                     ;RETURN (WMANT RESTORED (H,L))
 
 WIND:
-        LD      D,77Q           ;LOAD EXPONENT INTO D REGISTER
+        LD      D,$3F  ;77Q     ;LOAD EXPONENT INTO D REGISTER
         CALL    WCHAR           ;WRITE EXPONENT
 INDF1:
-        LD      A,377Q          ;LOAD MANTISSA VALUE
+        LD      A,$FF  ;377Q    ;LOAD MANTISSA VALUE
                                 ;WE ASSUME HERE THAT ALL BYTES OF MANTISSA
                                 ;ARE THE SAME
         CALL    WMANT           ;WRITE THE MANTISSA
-        LD      A,77Q           ;SET ACCUMULATOR TO FLAG
+        LD      A,$3F  ;77Q     ;SET ACCUMULATOR TO FLAG
         OR      A               ;SET FLAGS PROPERLY
         RET                     ;RETURN (WMANT RESTORED (H,L))
 
@@ -818,7 +828,7 @@ WZER:
         INC     L               ;WRITE NORMAL ZERO
         INC     L               ;
         INC     L               ;
-        LD      (HL),100Q       ;STORE EXPONENT FOR ZERO
+        LD      (HL),$40  ;100Q ;STORE EXPONENT FOR ZERO
         XOR     A               ;ZERO ACCUMULATOR
         CALL    WMANT           ;STORE ZERO MANTISSA
         OR      A               ;SET FLAGS PROPERLY
@@ -849,7 +859,7 @@ WCHAR:
         INC     L               ;PART OF ABOVE
         LD      A,(HL)          ;LOAD EXPONENT A
                                 ;AND MANTISSA SIGN
-        AND     200Q            ;JUST KEEP MANTISSA SIGN
+        AND     $80  ;200Q      ;JUST KEEP MANTISSA SIGN
         OR      D               ;OR IN NEW EXPONENT
         LD      (HL),A          ;STORE IT BACK
         RET                     ;RETURN WITH (H,L) POINT TO EXPONENT
@@ -909,11 +919,11 @@ INCR3:
         INC     L               ;POINT (H,L) TO CHAR
         INC     L               ;POINT (H,L) TO CHAR
 INCR2:
-        LD      A,177Q
+        LD      A,$7F  ;177Q
         AND     D               ;KILL SIGN BIT
         LD      D,A             ;BACK TO D
         LD      A,(HL)          ;NOW SIGN IT
-        AND     200Q            ;GET MANTISSA SIGN
+        AND     $80  ;200Q      ;GET MANTISSA SIGN
         OR      D               ;PUT TOGETHER
         LD      (HL),A          ;STORE IT BACK
         DEC     L               ;NOW BACK TO BASE
@@ -1139,11 +1149,11 @@ LMCP:
 ;       B,C,H,L = SAME AS ON ENTRY
 ;
 CCHK:                           ;ENTER HERE TO CHECK EXPONENT
-        CP      100Q            ;CHECK FOR 0 TO +63
+        CP      $40  ;100Q      ;CHECK FOR 0 TO +63
         JP      C,STORC         ;JUMP IF OKAY
-        CP      200Q            ;CHECK FOR +64 TO +127
+        CP      $80  ;200Q      ;CHECK FOR +64 TO +127
         JP      C,OFLWC         ;JUMP IF OVERFLOW
-        CP      300Q            ;CHECK FOR -128 TO -65
+        CP      $C0  ;300Q      ;CHECK FOR -128 TO -65
         JP      C,UFLWC         ;JUMP IF UNDERFLOW
 STORC:
         LD      E,L             ;SAVE L IN E
@@ -1306,21 +1316,21 @@ DSQRT:
         CALL    COPY            ;COPY TC INTRL REG1
         CALL    GCHR            ;PUT CHR IN A
         LD      B,A             ;MAKE COPY
-        AND     200Q            ;OK NEG
+        AND     $80  ;200Q      ;OK NEG
         JP      NZ,ERSQ
         LD      A,B
-        AND     100Q            ;OK NEG EXP
+        AND     $40  ;100Q      ;OK NEG EXP
         LD      A,B
         JP      Z,EPOS
         RRA                     ;DIV BY 2
-        AND     177Q
-        OR      100Q            ;SET SIGN BIT
+        AND     $7F  ;177Q
+        OR      $40  ;100Q      ;SET SIGN BIT
         LD      (HL),A          ;SAVE 1ST APPROX
         JP      AGN4
 
 EPOS:
         RRA                     ;DIV BY 2
-        AND     177Q
+        AND     $7F  ;177Q
         LD      (HL),A          ;SAVE 1ST APPROX
 AGN4:
         LD      L,C             ;SET REGS
@@ -1333,11 +1343,11 @@ AGN4:
         SUB     4               ;MULTIPLY INTRL REG 1
         LD      L,A
         LD      B,C             ;TIME INTRL REG2
-        ADD     A,10Q           ;PLACE RESULT IN
+        ADD     A,$8  ;10Q      ;PLACE RESULT IN
         LD      C,A             ;INMTRL REG 3
         CALL    LMUL
         LD      A,C
-        SUB     10Q             ;COPY ORG INTO
+        SUB     $8  ;10Q        ;COPY ORG INTO
         LD      C,A             ;INTRL REG 1
         SUB     2
         LD      L,A
@@ -1345,7 +1355,7 @@ AGN4:
         LD      A,H
         CALL    COPY
         LD      A,C
-        ADD     A,10Q           ;ADD INTRL
+        ADD     A,$8  ;10Q      ;ADD INTRL
         LD      L,A             ;REG3 OT
         LD      B,C             ;INTRL REG1
         ADD     A,4             ;ANS TO INTRL
@@ -1359,7 +1369,7 @@ AGN4:
         CALL    LDIV
         CALL    GCHR
         SUB     1
-        AND     177Q
+        AND     $7F  ;177Q
         LD      (HL),A
         LD      A,C
         SUB     3               ;C PTS TO INTRL REG 1
@@ -1429,30 +1439,30 @@ NNZRO:
         LD      (HL),E          ;/***TP
         INC     L               ;/***TP
         LD      B,A             ;SAVE COPY OF CHAR & SIGN
-        AND     177Q            ;GET ONLY CHAR.
+        AND     $7F  ;177Q      ;GET ONLY CHAR.
         LD      (HL),A          ;SAVE ABS(NUMBER)
-        CP      100Q            ;CK FOR ZERO
+        CP      $40  ;100Q      ;CK FOR ZERO
         JP      Z,NZRO
         SUB     1               ;GET SIGN OF DEC. EXP
-        AND     100Q            ;GET SIGN OF CHAR.
+        AND     $40  ;100Q      ;GET SIGN OF CHAR.
 NZRO:
         RLCA                    ;MOVE IT TO SIGN POSITION
         INC     L               ;MOVE TO DECIMAL EXP.
         LD      (HL),A          ;SAVE SIGN OF EXP.
         LD      A,B             ;GET MANT. SIGH BACK
         CALL    SIGN            ;OUTPUT SIGN
-        LD      L,TEN5 & 377Q   ;TRY MULT. OR DIV. BY 100000 FIRST
+        LD      L,TEN5 & $FF  ;377Q     ;TRY MULT. OR DIV. BY 100000 FIRST
         CALL    COPT            ;MAKE A COPY IN RAM
 TST8:
         CALL    GCHR            ;GET CHAR. OF NUMBER
         LD      B,A             ;SAVE A COPY
-        AND     100Q            ;GET ABSOLUTE VALUE OF CHAR
+        AND     $40  ;100Q      ;GET ABSOLUTE VALUE OF CHAR
         LD      A,B             ;IN CASE PLUS
         JP      Z,GOTV          ;ALREADY PLUS
-        LD      A,200Q          ;MAKE MINUS INTO PLUS
+        LD      A,$80  ;200Q    ;MAKE MINUS INTO PLUS
         SUB     B               ;PLUS=200B-CHAR
 GOTV:
-        CP      22Q             ;TEST FOR USE OF 100000
+        CP      $12  ;22Q       ;TEST FOR USE OF 100000
         JP      M,TRY1          ;WONT GO
         CALL    MORD            ;WILL GO SO DO IT
         ADD     A,5             ;INCREMENT DEC. EXPONENT BY 5
@@ -1460,7 +1470,7 @@ GOTV:
         JP     TST8             ;GO TRY AGAIN
 
 TRY1:
-        LD      L,TEN & 377Q    ;NOW USE JUST TEN
+        LD      L,TEN & $FF  ;377Q  ;NOW USE JUST TEN
         CALL    COPT            ;PUT IT IN RAM
 TST1:
         CALL    GCHR            ;GET EXPONENT
@@ -1484,7 +1494,7 @@ MDSKP:
         LD      (HL),5          ;5 DIGITS
         LD      E,A             ;SAVE CHAR. AS LEFT SHIFT COUNT
         CALL    LSFT            ;SHIFT LEFT PROPER NUMBER
-        CP     12Q              ;TEST FOR 2 DIGITS HERE
+        CP      $0A  ;12Q       ;TEST FOR 2 DIGITS HERE
         JP      P,TWOD          ;JMP IF 2 DIGITS TO OUTPUT
         CALL    DIGO            ;OUTPUT FIRST DIGIT
 POPD:
@@ -1492,23 +1502,23 @@ POPD:
 INPOP:
         CALL    DIGO            ;PRINT DIGIT IN A
         JP      NZ,POPD         ;MORE DIGITS?
-        LD      A,305Q          ;NO SO PRINT E
+        LD      A,$C5  ;305Q    ;NO SO PRINT E
         CALL    OUTR            ;BASIC CALL TO OUTPUT
         CALL    GETEX           ;GET DECIMAL EXP
         LD      B,A             ;SAVE A COPY
         CALL    SIGN            ;OUTPUT SIGN
         LD      A,B             ;GET EXP BACK
-        AND     77Q             ;GET GOOD BITS
+        AND     $3F  ;77Q       ;GET GOOD BITS
         CALL    CTWO            ;GO CONVERT 2 DIGITS
 DIGO:
-        ADD     A,260Q          ;MAKE A INTO ASCII
+        ADD     A,$B0  ;260Q    ;MAKE A INTO ASCII
         CALL    OUTR            ;OUTPUT DIGIT
         LD      L,C             ;GET DIGIT COUNT
         DEC     L               ;BACK UP TO DIGIT COUNT
         DEC     L
         LD      A,(HL)          ;TEST FOR DECIMAL PT
         CP      5               ;PRINT . AFTER 1ST DIGIT
-        LD      A,256Q          ;JUST IN CASE
+        LD      A,$AE  ;256Q    ;JUST IN CASE
         CALL	Z,OUTR          ;OUTPUT . IF 1ST DIGIT
         LD      D,(HL)          ;NOW DECREMENT DIGIT COUNT
         DEC     D
@@ -1521,12 +1531,12 @@ MULTT:
         LD      L,C             ;SAVE X2 IN "RESULT"
         DEC     L               ;SET TO TOP OF NUMBER
         LD      A,C             ;SET C TO RESULT
-        ADD     A,11Q
+        ADD     A,$09  ;11Q
         LD      C,A             ;NOW C SET RIGHT
         LD      A,H             ;SHOW RAM TO RAM TRANSFER
         CALL    COPY            ;SAVE X2 FINALLY
         LD      A,C             ;MUST RESET C
-        SUB     11Q             ;BACK TO NORMAL
+        SUB     $09  ;11Q       ;BACK TO NORMAL
         LD      C,A
         LD      E,2             ;NOW GET (X2)X4=X8
         LD      L,C             ;BUT MUST SAVE OVERFLOW
@@ -1534,7 +1544,7 @@ MULTT:
         CALL    TLP2            ;GET X8
         LD      L,C             ;SET UP TO CALL DADD
         LD      A,C             ;SET B TO X2
-        ADD     A,12Q           ;TO X2
+        ADD     A,$0A  ;12Q     ;TO X2
         LD      B,A
         CALL    DADD            ;ADD TWO LOW WORDS
         DEC     L               ;BACK UP TO OVERFLOW
@@ -1573,10 +1583,10 @@ TLP2:
         JP     TLOOP            ;GO FOR MORE
 
 SIGN:
-        AND     200Q            ;GET SIGN BIT
-        LD      A,240Q          ;SPACE INSTEAD OF PLUS
+        AND     $80  ;200Q      ;GET SIGN BIT
+        LD      A,$A0  ;240Q    ;SPACE INSTEAD OF PLUS
         JP      Z,PLSV          ;TEST FOR +
-        LD      A,255Q          ;NEGATIVE
+        LD      A,$AD  ;255Q    ;NEGATIVE
 PLSV:
         CALL    OUTR            ;OUTPUT SIGN
         RET
@@ -1597,10 +1607,10 @@ MORD:
         INC     B               ;NOW BOP POINTER SET
         LD      L,C             ;L POINTS TO NUMBER TO CONVERT
         LD      A,C             ;POINT C AT "RESULT" AREA
-        ADD     A,11Q           ;IN SCRATCH
+        ADD     A,$09  ;11Q     ;IN SCRATCH
         LD      C,A             ;NOW C SET RIGHT
         LD      A,E             ;NOW TEST FOR MUL
-        AND     200Q            ;TEST NEGATIVE DEC. EXP.
+        AND     $80  ;200Q      ;TEST NEGATIVE DEC. EXP.
         JP      Z,DIVIT         ;IF EXP IS + THEN DIVIDE
         CALL    LMUL            ;MULT.
 FINUP:
@@ -1623,7 +1633,7 @@ TWOD:
         LD      B,A             ;SAVE ONES DIGIT
         CALL    GETEX           ;GET DECIMAL EXP
         LD      E,A             ;SAVE A COPY
-        AND     200Q            ;TEST FOR NEGATIVE
+        AND     $80  ;200Q      ;TEST FOR NEGATIVE
         JP      Z,ADD1          ;BUMP EXP BY 1 SINCE 2 DIGITS
         DEC     E               ;DECREMENT NEGATIVE EXP SINCE 2 DIGITS
 FINIT:
@@ -1636,12 +1646,12 @@ ADD1:
         JP     FINIT
 
 CTWO:
-        LD      E,377Q          ;CONVERT 2 DIGIT BIN TO BCD
+        LD      E,$FF  ;377Q   ;CONVERT 2 DIGIT BIN TO BCD
 LOOP:
         INC     E               ;ADD UP TENS DIGIT
-        SUB     12Q             ;SUBTRACT 10
+        SUB     $0A  ;12Q       ;SUBTRACT 10
         JP      P,LOOP          ;TILL NEGATIVE RESULT
-        ADD     A,12Q           ;RESTORE ONES DIGIT
+        ADD     A,$0A  ;12Q     ;RESTORE ONES DIGIT
         LD      B,A             ;SAVE ONES DIGIT
         LD      A,E             ;GET TENS DIGIT
         CALL    DIGO            ;OUTPUT IT
@@ -1682,9 +1692,16 @@ COPY:
         LD      (HL),B          ;ALL 4  COPIED NOW
         RET                     ;ALL DONE
 
+SECTION     rodata_driver
 
-TEN5:   .DB      303Q,120Q,0Q,21Q  ;303240(8) = 100000.
-TEN:    .DB      240Q,0Q,0Q,4Q  ;12(8) = 10
+;TEN5:   .DB      303Q,120Q,0Q,21Q  ;303240(8) = 100000.
+;TEN:    .DB      240Q,0Q,0Q,4Q  ;12(8) = 10
+
+TEN5:   DEFB    $C3,$50,$00,$11
+TEN:    DEFB    $A0,$00,$00,$04
+ 
+SECTION     code_driver         ;LIBRARY ORIGIN
+
 ;
 ;       SCRATCH MAP FOR I/O CONVERSION ROUTINES
 ;
@@ -1719,9 +1736,9 @@ TEN:    .DB      240Q,0Q,0Q,4Q  ;12(8) = 10
 ;   SUBROUTINE ERR
 ;
 ERR:
-        LD      A,277Q          ;ERROR IN INPUT
+        LD      A,$BF  ;277Q    ;ERROR IN INPUT
         CALL    OUTR            ;SEND A ?(SPACE)
-        LD      A,240Q          ;
+        LD      A,$A0  ;240Q    ;
         CALL    OUTR            ;OUTPUT SPACE
         JP      PRMT            ;GO PROMPT USER AND RESTART
 ;HRJ  end replacing code
@@ -1737,63 +1754,63 @@ ERR:
 INPUT:
         LD      B,L             ;SAVE ADDRESS WHERE DATA IS TO GO
         LD      A,C             ;IN SCRATCH
-        ADD     A,17Q           ;COMPUTE LOC. IN SCRATCH
+        ADD     A,$0F  ;17Q     ;COMPUTE LOC. IN SCRATCH
         LD      L,A
         LD      (HL),B          ;PUT IT
         INC     C               ;OFFSET SCRATCH POINTER
         INC     C               ;BY 2
 PRMT:
-        LD      A,272Q          ;PROMPT USER WITH :
+        LD      A,$BA  ;272Q    ;PROMPT USER WITH :
         CALL    OUTR            ;OUTPUT :
         CALL    ZROIT           ;ZERO NUMBER
         INC     L               ;AND ZERO
         LD      (HL),A          ;DECIMAL EXPONENT
         CALL    GNUM            ;GET INTEGER PART OF NUM
-        CP      376Q            ;TERM=.?
+        CP      $FE  ;376Q      ;TERM=.?
         JP      Z,DECPT         ;YES
 TSTEX:
-        CP      25Q             ;TEST FOR E
+        CP      $15  ;25Q       ;TEST FOR E
         JP      Z,INEXP         ;YES - HANDLE EXP
-        CP      360Q            ;TEST FOR SPACE TERM (240B-260B)
+        CP      $F0  ;360Q      ;TEST FOR SPACE TERM (240B-260B)
         JP      NZ,ERR          ;NOT LEGAL TERM
         CALL    FLTSGN          ;FLOAT # AND SIGN IT
 SCALE:
         CALL    GETEX           ;GET DECIMAL EXP
-        AND     177Q            ;GET GOOD BITS
+        AND     $7F  ;177Q      ;GET GOOD BITS
         LD      E,A             ;SAVE COPY
-        AND     100Q            ;GET SIGN OF EXP
+        AND     $40  ;100Q      ;GET SIGN OF EXP
         RLCA                    ;INTO SIGN BIT
         OR      A               ;SET FLOPS
         LD      B,A             ;SAVE SIGN
         LD      A,E             ;GET EXP BACK
         JP      Z,APLS          ;JMP IS +
-        LD      A,200Q          ;MAKE MINUS +
+        LD      A,$80  ;200Q    ;MAKE MINUS +
         SUB     E               ;NOW ITS +
 APLS:
         ADD     A,B             ;SIGN NUMBER
         LD      (HL),A          ;SAVE EXP (SIGN & MAG.)
-        LD      L,TEN5 & 377Q   ;TRY MORD WITH 10**5 FIRST
+        LD      L,TEN5 & $FF    ;377Q    ;TRY MORD WITH 10**5 FIRST
         CALL    COPT            ;TRANSFER TO RAM
         CALL    GETEX           ;GET DECIMAL EXP
 INT5:
-        AND     77Q             ;GET MAG. OF EXP
-        CP      5Q              ;TEST FOR USE OF 10**5
+        AND     $3F  ;77Q       ;GET MAG. OF EXP
+        CP      $05  ;5Q        ;TEST FOR USE OF 10**5
         JP      M,TRYTN         ;WONT GO - TRY 10
         CALL    MORD            ;WILL GO SO DO IT
-        SUB     5Q              ;MAG = MAG -5
+        SUB     $05  ;5Q        ;MAG = MAG -5
         LD      (HL),A          ;UPDATE DEC. EXP IN MEM
         JP      INT5            ;GO TRY AGAIN
 
 TRYTN:
-        LD      L,TEN & 377Q    ;PUT TEN IN RAM
+        LD      L,TEN & $FF     ;377Q   ;PUT TEN IN RAM
         CALL    COPT
         CALL    GETEX           ;SET UP FOR LOOP
 INT1:
-        AND     77Q             ;GET MAGNITUDE
+        AND     $3F  ;77Q       ;GET MAGNITUDE
         OR      A               ;TEST FOR 0
         JP      Z,SAVEN         ;DONE, MOVE NUM OUT AND GET OUT
         CALL    MORD            ;NOT DONE - DO 10
-        SUB     1Q              ;EXP = EXP -1
+        SUB     $01  ;1Q        ;EXP = EXP -1
         LD      (HL),A          ;UPDATE MEM
         JP      INT1            ;TRY AGAIN
 
@@ -1818,27 +1835,27 @@ INEXP:
         CALL    SAVEN           ;SAVE NUMBER IN (L) TEMP
         CALL    ZROIT           ;ZERO OUT NUM. FOR INPUTTING EXP
         CALL    GNUM            ;NOW INPUT EXPONENT
-        CP      360Q            ;TEST FOR SPACE TERM.
+        CP      $F0  ;360Q      ;TEST FOR SPACE TERM.
         JP      NZ,ERR          ;NOT LEGAL - TRY AGAIN
         LD      L,C             ;GET EXP OUT OF MEM
         INC     L               ;/***TP
         INC     L               ;EXP LIMITED TO 5 BITS
         LD      A,(HL)          ;GET LOWEST 8 BITS
-        AND     37Q             ;GET GOOD BITS
+        AND     $1F  ;37Q       ;GET GOOD BITS
         LD      B,A             ;SAVE THEM
         INC     L               ;GET SIGN OF EXP
         LD      A,(HL)          ;INTO A
         OR      A               ;SET FLOPS
         LD      A,B             ;IN CASE NOTHING TO DO
         JP      M,USEIT         ;IF NEG. USE AS +
-        LD      A,0Q            ;IF + MAKE -
+        LD      A,$00  ;0Q      ;IF + MAKE -
         SUB     B               ;0-X = -X
 USEIT:
         INC     L               ;POINT AT EXP
         ADD     A,(HL)          ;GET REAL DEC. EXP
         LD      (HL),A          ;PUT IN MEM
         LD      A,C             ;NOW GET NUMBER BACK
-        ADD     A,15Q           ;GET ADD OF L
+        ADD     A,$0D  ;15Q     ;GET ADD OF L
         LD      L,A             ;L POINTS TO L OF NUMBER
         LD      L,(HL)          ;NOW L POINTS TO NUMBER
         LD      A,H             ;RAM TO RAM COPY
@@ -1847,24 +1864,24 @@ USEIT:
 
 GNUM:
         CALL    INP             ;GET A CHAR
-        CP      240Q            ;IGNORE LEADING SPACES
+        CP      $A0  ;240Q      ;IGNORE LEADING SPACES
         JP      Z,GNUM
-        CP      255Q            ;TEST FOR -
+        CP      $AD  ;255Q      ;TEST FOR -
         JP      NZ,TRYP         ;NOT MINUS
         LD      L,C             ;MINUS SO SET SIGN
         INC     L               ;IN CHAR LOC.
         INC     L               ;/***TP
         INC     L
-        LD      (HL),200Q       ;SET - SIGN
+        LD      (HL),$80  ;200Q ;SET - SIGN
         JP      GNUM
 
 TRYP:
-        CP      253Q            ;IGNORE +
+        CP      $AB  ;253Q      ;IGNORE +
         JP      Z,GNUM
 TSTN:
-        SUB     260Q            ;STRIP ASCII
+        SUB     $B0  ;260Q      ;STRIP ASCII
         RET     M               ;RETURN IF TERM
-        CP      12Q             ;TEST FOR NUMBER
+        CP      $0A  ;12Q       ;TEST FOR NUMBER
         RET     P               ;ILLEGAL
         LD      E,A             ;SAVE DIGIT
         CALL    GETN            ;LOC. OF DIGIT STORAGE TO L
@@ -1880,11 +1897,11 @@ TSTN:
         LD      (HL),A          ;PUT RESULT BACK
         DEC     L               ;NOW DO HIGH
         LD      A,(HL)          ;GET HIGH TO ADD IN CARRY
-        ADC     A,0Q            ;ADD IN CARRY
+        ADC     A,$00  ;0Q      ;ADD IN CARRY
         LD      (HL),A          ;UPDATE HIGH
         DEC     L               ;/***TP EXTENSION
         LD      A,(HL)
-        ADC     A,0Q            ;ADD IN CARRY
+        ADC     A,$00  ;0Q      ;ADD IN CARRY
         LD      (HL),A          ;/***TP ALL DONE
         RET     C               ;OVERFLOW ERROR
         DEC     L               ;BUMP DIGIT COUNT NOW
@@ -1902,7 +1919,7 @@ FLTSGN:
 
 SAVEN:
         LD      A,C             ;PUT NUMBER IN (L)
-        ADD     A,15Q           ;GET ADD OF L
+        ADD     A,$0D  ;15Q     ;GET ADD OF L
         LD      L,A
         LD      E,(HL)          ;GET L OF RESULT
         LD      L,E             ;POINT L AT (L)
@@ -1919,7 +1936,7 @@ SAVEN:
 
 GETN:
         LD      A,C             ;GET DIGIT
-        ADD     A,16Q           ;LAST LOC. IN SCRATCH
+        ADD     A,$0E  ;16Q     ;LAST LOC. IN SCRATCH
         LD      L,A             ;PUT IN L
         LD      A,(HL)          ;GET DIGIT
         RET
@@ -1939,6 +1956,4 @@ ZROIT:
 ;
 ; END of code from LLNL PDF document
 ;
-
-       .END
 
