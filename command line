@@ -1,0 +1,2 @@
+zcc +yaz180 --no-crt -m @tstfloat.lst -o tstfloat
+appmake +glue -b tstfloat --ihex --clean

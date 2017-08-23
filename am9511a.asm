@@ -54,7 +54,7 @@ DEFC    INT_NMI_ADDR        =   Z80_VECTOR_BASE+$21
 
 ;        .ORG NMI_APU_ISR      ;DRIVER ORIGIN FOR YAZ180 DURING TESTING
 
-SECTION code_driver
+SECTION apu_driver
 
 PUBLIC  APU_ISR
 
@@ -196,7 +196,7 @@ APU_ISR_ERROR:                  ; we've an error to notify
 
 ;        .ORG APU_LIBRARY        ;CODE ORIGIN FOR YAZ180 DURING TESTING
 
-SECTION code_lib
+SECTION apu_library
 
 PUBLIC APU_INIT, APU_CHK_IDLE
 PUBLIC APU_OP_LD, APU_CMD_LD
@@ -358,7 +358,19 @@ APU_CMD_EXIT:
 ; DATA SECTION
 ;
 
-SECTION data_driver
+; I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
+
+SECTION apu_data_align_256
+
+APUCMDBuf:      DEFS    __APU_CMD_SIZE
+APUPTRBuf:      DEFS    __APU_PTR_SIZE
+
+; pad to next 256 byte boundary
+IF (ASMPC & 0xff)
+   defs 256 - (ASMPC & 0xff)
+ENDIF
+
+SECTION apu_data
 
 PUBLIC  APUStatus, APUError
 
@@ -370,23 +382,6 @@ APUCMDBufUsed:  DEFB    0
 APUPTRBufUsed:  DEFB    0
 APUStatus:      DEFB    0
 APUError:       DEFB    0
-
-;   I/O Buffers must start on 0xnn00 because we increment low byte to roll-over
-
-SECTION data_align_256
-
-; pad to next 256 byte boundary
-;IF (ASMPC & 0xff)
-   defs 256 - (ASMPC & 0xff)
-;ENDIF
-
-APUCMDBuf:      DEFS    __APU_CMD_SIZE
-APUPTRBuf:      DEFS    __APU_PTR_SIZE
-
-; pad to next 256 byte boundary
-IF (ASMPC & 0xff)
-   defs 256 - (ASMPC & 0xff)
-ENDIF
 
 ;==============================================================================
 ;

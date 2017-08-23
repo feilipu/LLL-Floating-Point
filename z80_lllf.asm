@@ -57,7 +57,7 @@ DEFC    MAXCH   =   $3F ;077Q   ;MAXIMUM EXPONENT WITH SIGN EXTENDED
 ;       //// LIBRARY ORIGIN
 ;******************************************************
 ;
-SECTION     code_driver         ;LIBRARY ORIGIN
+SECTION     apu_library         ;LIBRARY ORIGIN
 ;
 ;******************************************************
 ;       //// OUTPUT SUBROUTINE
@@ -1692,7 +1692,7 @@ COPY:
         LD      (HL),B          ;ALL 4  COPIED NOW
         RET                     ;ALL DONE
 
-SECTION     rodata_driver
+SECTION     apu_data
 
 ;TEN5:   .DB      303Q,120Q,0Q,21Q  ;303240(8) = 100000.
 ;TEN:    .DB      240Q,0Q,0Q,4Q  ;12(8) = 10
@@ -1700,7 +1700,7 @@ SECTION     rodata_driver
 TEN5:   DEFB    $C3,$50,$00,$11
 TEN:    DEFB    $A0,$00,$00,$04
  
-SECTION     code_driver         ;LIBRARY ORIGIN
+SECTION     apu_library         ;LIBRARY ORIGIN
 
 ;
 ;       SCRATCH MAP FOR I/O CONVERSION ROUTINES

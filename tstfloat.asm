@@ -207,7 +207,7 @@ PRINT:
         INC HL                  ;Point to next character 
         JP PRINT                ;Continue until $00
 
-section rodata_user
+;SECTION  data_user
 
 HELLO:      DEFM    CHAR_CR,CHAR_LF,"LLL Float ",0
 APU_HELLO:  DEFM    CHAR_CR,CHAR_LF,"Am9511A Float ",0
