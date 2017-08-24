@@ -62,11 +62,8 @@ TEST:
         LD HL, APU_HELLO        ;LOAD HL ADDRESS OF HELLO
         CALL pstring            ;PRINT IT
         call pnewline
-
-        LD      HL, PYTHAGORAS  ;LOAD HL ADDRESS OF PYTHAGORAS
-        CALL    pstring         ;PRINT IT
-
-                                ;EXAMPLE CODE - ONE OPERAND COMMAND
+       
+                                ;EXAMPLE CODE - LLLF ONE OPERAND COMMAND
 
 ;        LD      H,SCRPG         ;SET H REGISTER TO RAM SCRATCH PAGE
 ;        LD      L,OP1           ;POINTER TO OPERAND 1
@@ -74,7 +71,7 @@ TEST:
 
 ;        CALL    INPUT           ;INPUT OPERAND 1 FROM TTY
 
-                                ;EXAMPLE CODE - TWO OPERAND COMMAND
+                                ;EXAMPLE CODE - LLLF TWO OPERAND COMMAND
 
 ;        LD      H,SCRPG        ;SET H REGISTER TO RAM SCRATCH PAGE
 ;        LD      L,OP2          ;POINTER TO OPERAND 2
@@ -97,19 +94,13 @@ TEST:
 
 ;        CALL    DSQRT           ;SQUARE ROOT OF OP1 AND PLACE RESULT IN RSULT
 
-                                ;EXAMPLE CODE - APU ONE OPERAND COMMAND
 
         CALL APU_INIT           ;INITIALISE THE APU
 
-        XOR A                   ;clear A register to 0
-        LD H, SCRPG             ;SET H REGISTER TO RAM SCRATCH PAGE
-        LD L, OP1               ;POINTER TO OPERAND 1
-        LD (HL), A              ;CLEAR SCRATCH AREA
-        LD D, H
-        LD E, L
-        INC DE
-        LD BC, 10H              ;CLEAR 16 BYTES
-        LDIR
+        LD HL, PYTHAGORAS       ;LOAD HL ADDRESS OF PYTHAGORAS
+        CALL pstring            ;PRINT IT
+
+                                ;EXAMPLE CODE - APU ONE OPERAND COMMAND
 
         LD H, SCRPG             ;SET H REGISTER TO RAM SCRATCH PAGE
         LD L, OP1               ;POINTER TO OPERAND 1
@@ -119,7 +110,7 @@ TEST:
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, OP1               ;POINTER TO OPERAND 1
-        ld a, __IO_APU_OP_ENT32 ;ENTER 32 bit (floating point from INPUT)
+        LD a, __IO_APU_OP_ENT32 ;ENTER 32 bit (floating point from INPUT)
         CALL APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
         
                                 ;EXAMPLE CODE - APU TWO OPERAND COMMAND
@@ -172,7 +163,7 @@ TEST:
 
         CALL APU_ISR_NMI        ;KICK OFF APU PROCESS, WHICH THEN INTERRUPTS
 
-        CALL APU_CHK_IDLE       ;check, because it could be doing a last command
+        CALL APU_CHK_IDLE       ;CHECK, because it could be doing a last command
 
                                 ;EXAMPLE CODE - OUTPUT
 

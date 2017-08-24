@@ -72,6 +72,10 @@ APU_ISR_NMI:
         ld hl, APUIntCount
         inc (hl)                ; atomic increment of interrupt entrance count
 
+        xor a                   ; set internal clock = crystal x 1 = 18.432MHz
+                                ; that makes the PHI 9.216MHz
+        out0 (CMR), a           ; CPU Clock Multiplier Reg (CMR)
+
 APU_ISR_ENTRY:
         ld a, (APUCMDBufUsed)   ; check whether we have a command to do
         or a                    ; zero?
@@ -104,6 +108,10 @@ APU_ISR_ENTRY:
         out (c), a              ; load the COMMAND, and do it
 
 APU_ISR_EXIT:
+                                ; set internal clock = crystal x 2 = 36.864MHz
+        ld a, CMR_X2            ; set Hi-Speed flag
+        out0 (CMR), a           ; CPU Clock Multiplier Reg (CMR)
+
         pop hl                  ; recover HL, etc
         pop de
         pop bc
@@ -115,7 +123,7 @@ APU_ISR_END:                    ; we've finished with no errors
         ld (APUStatus), a       ; set the COMMAND status to idle (NOP)
         jr APU_ISR_EXIT         ; we're done here
 
-APU_ISR_OP_ENT:      
+APU_ISR_OP_ENT:
         ld hl, (APUPTROutPtr)   ; get the pointer to where we pop OPERAND PTR
         ld e, (hl)              ; read the OPERAND PTR low byte from the APUPTROutPtr
         inc l                   ; move the POINTER low byte along, 0xFF rollover
@@ -131,13 +139,21 @@ APU_ISR_OP_ENT:
         ex de, hl               ; move the base address of the OPERAND to HL
 
         outi                    ; output 16 bit OPERAND
+
+        ex (sp), hl             ; delay for 38 cycles (2.06us) TWI 1.280us
+        ex (sp), hl
         outi
 
         ld a, (APUStatus)       ; recover the COMMAND status
         cp __IO_APU_OP_ENT16    ; is it a 2 byte OPERAND
         jp z, APU_ISR_ENTRY     ; yes? then go back to get another COMMAND
 
+        ex (sp), hl             ; delay for 38 cycles (2.06us) TWI 1.280us
+        ex (sp), hl
         outi                    ; output last two bytes of 32 bit OPERAND
+
+        ex (sp), hl             ; delay for 38 cycles (2.06us) TWI 1.280us
+        ex (sp), hl
         outi
 
         jp APU_ISR_ENTRY        ; go back to get another COMMAND
@@ -165,6 +181,7 @@ APU_ISR_OP_REM:
 
         inc hl                  ; increment two more bytes for 32bit OPERAND
         inc hl
+
         ind                     ; get the higher two bytes of 32bit OPERAND
         ind
 
@@ -178,10 +195,6 @@ APU_ISR_ERROR:                  ; we've an error to notify in A
         ld hl, APUError         ; collect any previous errors
         and (hl)                ; and we add any new error types
         ld (hl), a              ; set the APUError status
-        
-        ld bc, __IO_PIO_PORT_B  ; output errors onto Port B FIXME
-        out (c), a              ; APUStatus onto Port B
-
         ret                     ; we're done here
 
 ;==================================================================================
@@ -233,10 +246,6 @@ APU_INIT:
         ld (APUStatus), a       ; set APU status to idle (NOP)
         ld (APUError), a        ; clear APU errors
         ld (APUIntCount), a     ; set number of interrupts processed to zero
-
-        ld a, __IO_PIO_CNTL_00  ; A->, B->, CH->, CL->
-        ld bc, __IO_PIO_CONTROL ; output errors onto Port B FIXME
-        out (c), a              ; APUStatus onto Port B
 
         ld a, DCNTL_IWI0|DCNTL_IWI1 ; DMA/Wait Control Reg Set I/O Wait States
         out0 (DCNTL), a         ; 0 Memory Wait & 4 I/O Wait
