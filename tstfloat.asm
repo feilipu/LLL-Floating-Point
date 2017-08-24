@@ -10,15 +10,14 @@
 
 INCLUDE "config_yaz180_private.inc"
 
-
-
-EXTERN  APU_ISR
+EXTERN  APU_ISR_NMI
 EXTERN  APU_INIT, APU_CHK_IDLE
 EXTERN  APU_OP_LD, APU_CMD_LD
 
-EXTERN  INPUT,CVRT
+EXTERN  INPUT, CVRT
+EXTERN  LADD, LSUB, LMUL, LDIV, DSQRT
 
-EXTERN  APUError
+EXTERN  APUStatus, APUError, APUIntCount
 
 ;
 ;==============================================================================
@@ -28,26 +27,25 @@ EXTERN  APUError
 DEFC    DEINT   =   $0C47       ;Function DEINT to get (IX+USR) into DE registers
 DEFC    ABPASS  =   $13BD       ;Function ABPASS to put output into AB register for return
 
-DEFC    STACKTOP        =   $3FFE   ; start of a global stack (any pushes pre-decrement)
+DEFC    STACKTOP    =   $3FFE   ; start of a global stack (any pushes pre-decrement)
 
 ;==============================================================================
 ;       SIMPLE EXERCISE PROGRAM
 ;
 
-DEFC    SCRPG   =   $28         ;SCRATCH PAGE IS 2800H
-DEFC    OP1     =   $00         ;STARTING LOCATION OF OPERAND 1
-DEFC    OP2     =   OP1+$04     ;STARTING LOCATION OF OPERAND 2
-DEFC    RSULT   =   OP2+$04     ;STARTING LOCATION OF RESULT
-DEFC    SCR     =   RSULT+$04   ;STARTING LOCATION OF SCRATCH AREA
+DEFC    SCRPG   =   $28         ; SCRATCH PAGE IS 2800H
+DEFC    OP1     =   $00         ; STARTING LOCATION OF OPERAND 1
+DEFC    OP2     =   OP1+$04     ; STARTING LOCATION OF OPERAND 2
+DEFC    RSULT   =   OP2+$04     ; STARTING LOCATION OF RESULT
+DEFC    SCR     =   RSULT+$04   ; STARTING LOCATION OF SCRATCH AREA
 
 
-                                ; ORIGIN FOR YAZ180 DURING TESTING
-SECTION code_user               ; start from 'X' jump, Basic prompt
+SECTION code_user               ; ORIGIN FOR YAZ180 DURING TESTING
+                                ; start from 'X' jump, Basic prompt
 
 PUBLIC _main
 
 _main:
-
                                 ; Am9511A I/O is from $Cn00 to $Cn01
 
                                 ; assume the operand byte code in function call
@@ -58,14 +56,15 @@ _main:
         call DEINT              ; get the USR(x) argument in de
 
 TEST:
-        LD      (STACKTOP), sp  ; store the old stack top, at top of new SP
-        LD      sp, STACKTOP    ; set new Stack Pointer, before decrement
+        LD (STACKTOP), sp       ; store the old stack top, at top of new SP
+        LD sp, STACKTOP         ; set new Stack Pointer, before decrement
 
-        LD      HL, APU_HELLO   ;LOAD HL ADDRESS OF HELLO
-        CALL    PRINT           ;PRINT IT
+        LD HL, APU_HELLO        ;LOAD HL ADDRESS OF HELLO
+        CALL pstring            ;PRINT IT
+        call pnewline
 
         LD      HL, PYTHAGORAS  ;LOAD HL ADDRESS OF PYTHAGORAS
-        CALL    PRINT           ;PRINT IT
+        CALL    pstring         ;PRINT IT
 
                                 ;EXAMPLE CODE - ONE OPERAND COMMAND
 
@@ -100,7 +99,7 @@ TEST:
 
                                 ;EXAMPLE CODE - APU ONE OPERAND COMMAND
 
-        CALL    APU_INIT        ;INITIALISE THE APU
+        CALL APU_INIT           ;INITIALISE THE APU
 
         XOR A                   ;clear A register to 0
         LD H, SCRPG             ;SET H REGISTER TO RAM SCRATCH PAGE
@@ -136,32 +135,32 @@ TEST:
         LD A, __IO_APU_OP_ENT32 ;ENTER 32 bit (floating point from INPUT)
         CALL APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
 
-;        LD A, 17h               ;COMMAND for PTOF (push floating )
-;        CALL APU_CMD_LD         ;ENTER a COMMAND
-
-;        LD A, 12h               ;COMMAND for FMUL (floating multiply)
-;        CALL APU_CMD_LD         ;ENTER a COMMAND
-
-;        LD A, 19h               ;COMMAND for XCHF (swap float)
-;        CALL APU_CMD_LD         ;ENTER a COMMAND
-
-;        LD A, 17h               ;COMMAND for PTOF (push floating )
-;        CALL APU_CMD_LD         ;ENTER a COMMAND
-
-        LD A, 13h               ;COMMAND for FDIV (floating divide)
+        LD A, 17h               ;COMMAND for PTOF (push floating )
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
-;        LD A, 12h               ;COMMAND for FMUL (floating multiply)
+        LD A, 12h               ;COMMAND for FMUL (floating multiply)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+        LD A, 19h               ;COMMAND for XCHF (swap float)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+        LD A, 17h               ;COMMAND for PTOF (push floating )
+        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+;        LD A, 13h               ;COMMAND for FDIV (floating divide)
 ;        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+        LD A, 12h               ;COMMAND for FMUL (floating multiply)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
 
 ;        LD A, 11h               ;COMMAND for FSUB (floating subtract)
 ;        CALL APU_CMD_LD         ;ENTER a COMMAND
 
-;        LD A, 10h               ;COMMAND for FADD (floating add)
-;        CALL APU_CMD_LD         ;ENTER a COMMAND
+        LD A, 10h               ;COMMAND for FADD (floating add)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
 
-;        LD A, 01h               ;COMMAND for SQRT (floating square root)
-;        CALL APU_CMD_LD         ;ENTER a COMMAND
+        LD A, 01h               ;COMMAND for SQRT (floating square root)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
 
 ;        LD A, 1Ah               ;COMMAND for PUPI (push Pi)
 ;        CALL APU_CMD_LD         ;ENTER a COMMAND
@@ -171,7 +170,7 @@ TEST:
         LD A, __IO_APU_OP_REM32 ;REMOVE 32 bit OPERAND (floating point in this case)
         CALL APU_OP_LD
 
-        CALL APU_ISR            ;KICK OFF APU PROCESS INTERRUPTS
+        CALL APU_ISR_NMI        ;KICK OFF APU PROCESS, WHICH THEN INTERRUPTS
 
         CALL APU_CHK_IDLE       ;check, because it could be doing a last command
 
@@ -181,10 +180,12 @@ TEST:
         LD L, RSULT             ;(H)L POINTER NOW RSULT
         LD C, SCR               ;SCRATCH AREA
 
-        CALL CVRT               ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
+        call CVRT               ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
+        call pnewline           ;print newline
 
-        LD      HL, NEW_LINE    ;LOAD HL ADDRESS OF NEW_LINE
-        CALL    PRINT           ;PRINT IT
+        ld a, (APUIntCount)     ; print how many times the interrupt was entered      
+        call phex 
+        call pnewline
 
         LD SP, (STACKTOP)       ;reenable old SP
         
@@ -199,20 +200,66 @@ TEST:
 ;       OUTPUT SUBROUTINE
 ;
 
-PRINT:
-        LD A, (HL)              ;Get character from HL
-        OR A                    ;Is it $00 ?
-        RET Z                   ;Then RETurn on terminator
-        RST 08H                 ;PRINT IT
-        INC HL                  ;Point to next character 
-        JP PRINT                ;Continue until $00
+    ;print string
+pstring:
+    ld a, (hl)          ;Get character from HL
+    or a                ;Is it $00 ?
+    ret z               ;Then RETurn on terminator
+    rst 08H             ;Print IT
+    inc hl              ;Point to next character 
+    jp pstring            ;Continue until $00
+
+
+    ;print CR/LF
+pnewline:
+    ld a, CHAR_CR
+    rst 08
+    ld a, CHAR_LF
+    rst 08
+    ret
+
+    ;print contents of HL as 16 bit number in ASCII HEX
+phex16:
+    push af
+    ld a, h
+    call phex
+    ld a, l
+    call phex
+    pop af
+    ret
+
+    ;print contents of A as 8 bit number in ASCII HEX
+phex:
+    push af             ;store the binary value
+    rlca                ;shift accumulator left by 4 bits
+    rlca
+    rlca
+    rlca
+    and $0F             ;now high nibble is low position
+    cp 10
+    jr c, phex_b        ;jump if high nibble < 10
+    add a, 7            ;otherwise add 7 before adding '0'
+phex_b:
+    add a, '0'          ;add ASCII 0 to make a character
+    rst 08              ;print high nibble
+    pop af              ;recover the binary value
+phex1:
+    and $0F
+    cp 10
+    jr c, phex_c        ;jump if low nibble < 10
+    add a, 7
+phex_c:
+    add a, '0'
+    rst 08              ;print low nibble
+    ret
+
+;------------------------------------------------------------------------------
 
 ;SECTION  data_user
 
 HELLO:      DEFM    CHAR_CR,CHAR_LF,"LLL Float ",0
 APU_HELLO:  DEFM    CHAR_CR,CHAR_LF,"Am9511A Float ",0
 PYTHAGORAS: DEFM    CHAR_CR,CHAR_LF,"SQRT[ a^2 + b^2 ] ",0
-NEW_LINE:   DEFM    CHAR_CR,CHAR_LF,0
 
 ;==============================================================================
 ;

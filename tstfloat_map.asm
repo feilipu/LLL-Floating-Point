@@ -14,20 +14,20 @@
 ; https://feilipu.me/
 ;
 
-INCLUDE "config_yaz180_private.inc"
-
 SECTION     apu_data_align_256
 ORG         $2500
 
 SECTION     apu_data
 ORG         $2700
 
-SECTION     apu_driver
-ORG         $2800
+SECTION     apu_isr
+ORG         $2900
 
 SECTION     apu_library
-ORG         $3000
+ORG         $2A00
 
 SECTION     code_user
-ORG         $8200
+ORG         $A000
+
+
 

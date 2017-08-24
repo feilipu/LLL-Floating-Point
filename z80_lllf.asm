@@ -53,6 +53,15 @@ DEFC    MAXCH   =   $3F ;077Q   ;MAXIMUM EXPONENT WITH SIGN EXTENDED
 ;RX0            RST 2           ;RETURN RX CHARACTER IN A, BLOCKING
 ;RX0_CHK        RST 3           ;IMMEDIATELY RETURNS AVAILABLE RX CHARACTERS IN A
 ;
+
+;******************************************************
+;       //// PUBLIC FUNCTIONS
+;******************************************************
+;
+
+PUBLIC  INPUT, CVRT
+PUBLIC  LADD, LSUB, LMUL, LDIV, DSQRT
+
 ;******************************************************
 ;       //// LIBRARY ORIGIN
 ;******************************************************
@@ -63,9 +72,6 @@ SECTION     apu_library         ;LIBRARY ORIGIN
 ;       //// OUTPUT SUBROUTINE
 ;******************************************************
 ;
-
-PUBLIC  CVRT
-
 ; OUTR OUTPUT FROM CVRT INTO TX0 OUTPUT BUFFER
 ; ALL REG'S MAINTAINED
 ;
@@ -79,8 +85,6 @@ OUTR:
 ;       //// INPUT SUBROUTINES
 ;******************************************************
 ;
-
-PUBLIC  INPUT
 
 ; ROUTINE TO INPUT CHAR FROM INPUT BUFFER
 ; RST 10H LOOPS TILL A CHARACTER IS AVAILABLE
@@ -1451,7 +1455,7 @@ NZRO:
         LD      (HL),A          ;SAVE SIGN OF EXP.
         LD      A,B             ;GET MANT. SIGH BACK
         CALL    SIGN            ;OUTPUT SIGN
-        LD      L,TEN5 & $FF  ;377Q     ;TRY MULT. OR DIV. BY 100000 FIRST
+        LD      L,TEN5 & $FF  ;377Q  ;TRY MULT. OR DIV. BY 100000 FIRST
         CALL    COPT            ;MAKE A COPY IN RAM
 TST8:
         CALL    GCHR            ;GET CHAR. OF NUMBER
@@ -1646,7 +1650,7 @@ ADD1:
         JP     FINIT
 
 CTWO:
-        LD      E,$FF  ;377Q   ;CONVERT 2 DIGIT BIN TO BCD
+        LD      E,$FF  ;377Q    ;CONVERT 2 DIGIT BIN TO BCD
 LOOP:
         INC     E               ;ADD UP TENS DIGIT
         SUB     $0A  ;12Q       ;SUBTRACT 10
@@ -1694,12 +1698,13 @@ COPY:
 
 SECTION     apu_data
 
-;TEN5:   .DB      303Q,120Q,0Q,21Q  ;303240(8) = 100000.
-;TEN:    .DB      240Q,0Q,0Q,4Q  ;12(8) = 10
+;TEN5:  .DB     303Q,120Q,0Q,21Q    ;303240(8) = 100000.
+;TEN:   .DB     240Q,0Q,0Q,4Q       ;12(8) = 10
 
-TEN5:   DEFB    $C3,$50,$00,$11
-TEN:    DEFB    $A0,$00,$00,$04
- 
+TEN5:   DEFB    $C3,$50,$00,$11 ;303240(8) = 100000.
+TEN:    DEFB    $A0,$00,$00,$04 ;12(8) = 10
+
+
 SECTION     apu_library         ;LIBRARY ORIGIN
 
 ;
@@ -1789,7 +1794,7 @@ SCALE:
 APLS:
         ADD     A,B             ;SIGN NUMBER
         LD      (HL),A          ;SAVE EXP (SIGN & MAG.)
-        LD      L,TEN5 & $FF    ;377Q    ;TRY MORD WITH 10**5 FIRST
+        LD      L,TEN5 & $FF    ;377Q  ;TRY MORD WITH 10**5 FIRST
         CALL    COPT            ;TRANSFER TO RAM
         CALL    GETEX           ;GET DECIMAL EXP
 INT5:
@@ -1802,7 +1807,7 @@ INT5:
         JP      INT5            ;GO TRY AGAIN
 
 TRYTN:
-        LD      L,TEN & $FF     ;377Q   ;PUT TEN IN RAM
+        LD      L,TEN & $FF     ;377Q  ;PUT TEN IN RAM
         CALL    COPT
         CALL    GETEX           ;SET UP FOR LOOP
 INT1:
@@ -1952,7 +1957,7 @@ ZROIT:
         INC     L               ;NOW SET SIGN TO +
         LD      (HL),A
         RET                     ;DONE
-;
+
 ;
 ; END of code from LLNL PDF document
 ;
