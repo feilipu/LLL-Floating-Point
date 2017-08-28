@@ -12,7 +12,7 @@ INCLUDE "config_yaz180_private.inc"
 
 EXTERN  _am9511a_isr
 EXTERN  _am9511a_reset, _am9511a_chk_idle
-EXTERN  _am9511a_op_ld, _am9511a_cmd_ld
+EXTERN  _am9511a_cmd_ld, _am9511a_cmd_ld
 
 EXTERN  APUStatus, APUError
 
@@ -85,7 +85,7 @@ _main:
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, OP1               ;POINTER TO OPERAND 1
         LD a, __IO_APU_OP_ENT32 ;ENTER 32 bit (double word from INPUT)
-        CALL _am9511a_op_ld     ;POINTER TO OPERAND IN OPERAND BUFFER
+        CALL _am9511a_cmd_ld    ;POINTER TO OPERAND IN OPERAND BUFFER
 
         ld hl, INPUT_DWD_PROMPT
         call pstring
@@ -97,7 +97,7 @@ _main:
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, OP2               ;POINTER TO OPERAND 2
         LD A, __IO_APU_OP_ENT32 ;ENTER 32 bit (double word from INPUT)
-        CALL _am9511a_op_ld     ;POINTER TO OPERAND IN OPERAND BUFFER
+        CALL _am9511a_cmd_ld    ;POINTER TO OPERAND IN OPERAND BUFFER
 
                                 ;EXAMPLE CODE - COMMANDS
                                 
@@ -134,7 +134,7 @@ _main:
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, RSULT             ;(D)E POINTER NOW RSULT
         LD A, __IO_APU_OP_REM32 ;REMOVE 32 bit OPERAND
-        CALL _am9511a_op_ld
+        CALL _am9511a_cmd_ld
 
         CALL _am9511a_isr       ;KICK OFF APU PROCESS, WHICH THEN INTERRUPTS
 
