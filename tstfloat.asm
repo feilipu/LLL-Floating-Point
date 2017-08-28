@@ -46,23 +46,15 @@ SECTION code_user               ; ORIGIN FOR YAZ180 DURING TESTING
 PUBLIC _main
 
 _main:
-                                ; Am9511A I/O is from $Cn00 to $Cn01
-
-                                ; assume the operand byte code in function call
-                                ; return 16 bit result (if relevant)
-                                ; NOS, TOS, poked to relevant addresses
-                                ; Result peeked from relevant address
-
         call DEINT              ; get the USR(x) argument in de
 
-TEST:
         LD (STACKTOP), sp       ; store the old stack top, at top of new SP
         LD sp, STACKTOP         ; set new Stack Pointer, before decrement
 
         LD HL, APU_HELLO        ;LOAD HL ADDRESS OF HELLO
         CALL pstring            ;PRINT IT
         call pnewline
-       
+
                                 ;EXAMPLE CODE - LLLF ONE OPERAND COMMAND
 
 ;        LD      H,SCRPG         ;SET H REGISTER TO RAM SCRATCH PAGE
@@ -94,39 +86,50 @@ TEST:
 
 ;        CALL    DSQRT           ;SQUARE ROOT OF OP1 AND PLACE RESULT IN RSULT
 
-
-        CALL APU_INIT           ;INITIALISE THE APU
-
         LD HL, PYTHAGORAS       ;LOAD HL ADDRESS OF PYTHAGORAS
         CALL pstring            ;PRINT IT
 
+
                                 ;EXAMPLE CODE - APU ONE OPERAND COMMAND
+
+        CALL APU_INIT           ;INITIALISE THE APU
+                                ;Am9511A I/O is from $Cn00 to $Cn01
+
+        ld hl, INPUT_DWD_PROMPT
+        call pstring
 
         LD H, SCRPG             ;SET H REGISTER TO RAM SCRATCH PAGE
         LD L, OP1               ;POINTER TO OPERAND 1
         LD C, SCR               ;SCRATCH AREA
 
-        CALL INPUT              ;INPUT OPERAND 1 FROM TTY
+;        CALL INPUT              ;INPUT OPERAND 1 FROM TTY
+        call rhexdwd
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, OP1               ;POINTER TO OPERAND 1
-        LD a, __IO_APU_OP_ENT32 ;ENTER 32 bit (floating point from INPUT)
+        LD a, __IO_APU_OP_ENT32 ;ENTER 32 bit (double word from INPUT)
         CALL APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
-        
+
                                 ;EXAMPLE CODE - APU TWO OPERAND COMMAND
+        ld hl, INPUT_DWD_PROMPT
+        call pstring
 
         LD H, SCRPG             ;SET H REGISTER TO RAM SCRATCH PAGE
         LD L, OP2               ;POINTER TO OPERAND 2
         LD C, SCR               ;SCRATCH AREA
 
-        CALL INPUT              ;INPUT OPERAND 2 FROM TTY
+;        CALL INPUT              ;INPUT OPERAND 2 FROM TTY
+        call rhexdwd
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, OP2               ;POINTER TO OPERAND 2
-        LD A, __IO_APU_OP_ENT32 ;ENTER 32 bit (floating point from INPUT)
+        LD A, __IO_APU_OP_ENT32 ;ENTER 32 bit (double word from INPUT)
         CALL APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
 
-        LD A, __IO_APU_OP_PTOF  ;COMMAND for PTOF (push floating )
+        LD A, __IO_APU_OP_FLTD  ;COMMAND for FLTD (float double)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
+
+        LD A, __IO_APU_OP_PTOF  ;COMMAND for PTOF (push float)
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
         LD A, __IO_APU_OP_FMUL  ;COMMAND for FMUL (floating multiply)
@@ -135,17 +138,14 @@ TEST:
         LD A, __IO_APU_OP_XCHF  ;COMMAND for XCHF (swap float)
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
-        LD A, __IO_APU_OP_PTOF  ;COMMAND for PTOF (push floating )
+        LD A, __IO_APU_OP_FLTD  ;COMMAND for FLTD (float double)
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
-;        LD A, __IO_APU_OP_FDIV  ;COMMAND for FDIV (floating divide)
-;        CALL APU_CMD_LD         ;ENTER a COMMAND
+        LD A, __IO_APU_OP_PTOF  ;COMMAND for PTOF (push floating)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
 
         LD A, __IO_APU_OP_FMUL  ;COMMAND for FMUL (floating multiply)
         CALL APU_CMD_LD         ;ENTER a COMMAND
-
-;        LD A, __IO_APU_OP_FSUB  ;COMMAND for FSUB (floating subtract)
-;        CALL APU_CMD_LD         ;ENTER a COMMAND
 
         LD A, __IO_APU_OP_FADD  ;COMMAND for FADD (floating add)
         CALL APU_CMD_LD         ;ENTER a COMMAND
@@ -153,12 +153,12 @@ TEST:
         LD A, __IO_APU_OP_SQRT  ;COMMAND for SQRT (floating square root)
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
-;        LD A, __IO_APU_OP_PUPI  ;COMMAND for PUPI (push Pi)
-;        CALL APU_CMD_LD         ;ENTER a COMMAND
+        LD A, __IO_APU_OP_FIXD  ;COMMAND for FIXD (fix double)
+        CALL APU_CMD_LD         ;ENTER a COMMAND
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
         LD E, RSULT             ;(D)E POINTER NOW RSULT
-        LD A, __IO_APU_OP_REM32 ;REMOVE 32 bit OPERAND (floating point in this case)
+        LD A, __IO_APU_OP_REM32 ;REMOVE 32 bit OPERAND
         CALL APU_OP_LD
 
         CALL APU_ISR_NMI        ;KICK OFF APU PROCESS, WHICH THEN INTERRUPTS
@@ -166,12 +166,16 @@ TEST:
         CALL APU_CHK_IDLE       ;CHECK, because it could be doing a last command
 
                                 ;EXAMPLE CODE - OUTPUT
+        call pnewline
+        ld hl, OUTPUT_DWD_PROMPT
+        call pstring
 
         LD H, SCRPG             ;SET H REGISTER TO RAM SCRATCH PAGE
         LD L, RSULT             ;(H)L POINTER NOW RSULT
         LD C, SCR               ;SCRATCH AREA
 
-        call CVRT               ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
+;        call CVRT               ;OUTPUT NUMBER STARTING IN LOCATION RSULT TO TTY
+        call phexdwd
         call pnewline           ;print newline
 
         ld a, (APUIntCount)     ; print how many times the interrupt was entered      
@@ -184,11 +188,72 @@ TEST:
         ld b, a
         xor a
         jp ABPASS               ;output them
-        
-;        JP TEST                 ;START AGAIN
 
 ;==============================================================================
-;       OUTPUT SUBROUTINE
+;       INPUT SUBROUTINES
+;
+
+rhexdwd:                        ; returns 4 bytes LE, from address in hl
+        push af
+        inc hl
+        inc hl
+        inc hl
+        call rhex
+        ld (hl), a
+        call phex
+        dec hl
+        call rhex
+        ld (hl), a
+        call phex
+        dec hl
+        call rhex
+        ld (hl), a
+        call phex
+        dec hl
+        call rhex
+        ld (hl), a
+        call phex     
+        pop af
+        ret
+
+rhexwd:                         ; returns 2 bytes LE, from address in hl
+        push af
+        inc hl
+        call rhex
+        ld (hl), a
+        call phex
+        dec hl
+        call rhex
+        ld (hl), a
+        call phex
+        pop af
+        ret
+
+rhex:                           ; Returns byte in a
+        push bc
+        rst 10H                 ; Rx byte
+        sub '0'
+        cp 10
+        jr c, rhexnbl2          ; if a<10 read the second nibble
+        sub 7                   ; else subtract 'A'-'0' (17) and add 10
+rhexnbl2:
+        rlca                    ; shift accumulator left by 4 bits
+        rlca
+        rlca
+        rlca
+        ld c, a                 ; temporarily store the first nibble in c
+        rst 10H                 ; Rx byte
+        sub '0'
+        cp 10
+        jr c, rhexend           ; if a<10 finalize
+        sub 7                   ; else subtract 'A' (17) and add 10
+rhexend:
+        or c                    ; assemble two nibbles into one byte in a
+        pop bc
+        ret                     ; return the byte read in a
+
+;==============================================================================
+;       OUTPUT SUBROUTINES
 ;
 
     ;print string
@@ -200,7 +265,6 @@ pstring:
     inc hl              ;Point to next character 
     jp pstring          ;Continue until $00
 
-
     ;print CR/LF
 pnewline:
     ld a, CHAR_CR
@@ -209,8 +273,8 @@ pnewline:
     rst 08
     ret
 
-    ;print Double Word at HL as 32 bit number in ASCII HEX
-phexdwdptr:
+    ;print Double Word at address HL as 32 bit number in ASCII HEX
+phexdwd:
     push af
     inc hl
     inc hl
@@ -221,6 +285,18 @@ phexdwdptr:
     ld a, (hl)
     call phex
     dec hl
+    ld a, (hl)
+    call phex
+    dec hl
+    ld a, (hl)
+    call phex
+    pop af
+    ret
+
+    ;print Word at address HL as 16 bit number in ASCII HEX
+phexwd:
+    push af
+    inc hl
     ld a, (hl)
     call phex
     dec hl
@@ -244,7 +320,7 @@ phexdwdreg:
     ret
 
     ;print contents of HL as 16 bit number in ASCII HEX
-phexwd:
+phexwdreg:
     push af
     ld a, h
     call phex
@@ -285,6 +361,10 @@ phex_c:
 HELLO:      DEFM    CHAR_CR,CHAR_LF,"LLL Float ",0
 APU_HELLO:  DEFM    CHAR_CR,CHAR_LF,"Am9511A Float ",0
 PYTHAGORAS: DEFM    CHAR_CR,CHAR_LF,"SQRT[ a^2 + b^2 ] ",0
+INPUT_WD_PROMPT:    DEFM    CHAR_CR,CHAR_LF,"WD  Input  0x",0
+INPUT_DWD_PROMPT:   DEFM    CHAR_CR,CHAR_LF,"DWD Input  0x",0
+OUTPUT_WD_PROMPT:   DEFM    CHAR_CR,CHAR_LF,"WD  Output 0x",0
+OUTPUT_DWD_PROMPT:  DEFM    CHAR_CR,CHAR_LF,"DWD Output 0x",0
 
 ;==============================================================================
 ;
