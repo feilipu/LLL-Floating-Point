@@ -21,27 +21,6 @@
 
 INCLUDE "config_yaz180_private.inc"
 
-;==============================================================================
-;
-; DEFINES SECTION
-;
-
-DEFC    RAMSTART_CA0    =   $2000   ; Bottom of Common 0 RAM
-
-;   RAM Vector Address for Z80 RST Table, and for Z180 Vector Table
-DEFC    Z80_VECTOR_BASE =   RAMSTART_CA0
-
-;   Z80 Interrupt Service Routine Addresses - rewrite as needed
-DEFC    Z180_TRAP_ADDR      =   Z80_VECTOR_BASE+$01
-DEFC    RST_08_ADDR         =   Z80_VECTOR_BASE+$05
-DEFC    RST_10_ADDR         =   Z80_VECTOR_BASE+$09
-DEFC    RST_18_ADDR         =   Z80_VECTOR_BASE+$0D
-DEFC    RST_20_ADDR         =   Z80_VECTOR_BASE+$11
-DEFC    RST_28_ADDR         =   Z80_VECTOR_BASE+$15
-DEFC    RST_30_ADDR         =   Z80_VECTOR_BASE+$19
-DEFC    INT_INT0_ADDR       =   Z80_VECTOR_BASE+$1D
-DEFC    INT_NMI_ADDR        =   Z80_VECTOR_BASE+$21
-
 ;==================================================================================
 ;
 ; PUBLIC FUNCTIONS
@@ -206,6 +185,8 @@ APU_ISR_ERROR:                  ; we've an error to notify in A
 ;------------------------------------------------------------------------------
 ;       APU_INIT
 ;       Initialises the APU buffers
+;
+;       HL = address of the jump table nmi address
 
 SECTION apu_library             ;LIBRARY ORIGIN FOR YAZ180 DURING TESTING
 
@@ -248,12 +229,12 @@ APU_INIT:
         ld (APUError), a        ; clear APU errors
         ld (APUIntCount), a     ; set number of interrupts processed to zero
 
-        ld a, DCNTL_IWI0|DCNTL_IWI1 ; DMA/Wait Control Reg Set I/O Wait States
-        out0 (DCNTL), a         ; 0 Memory Wait & 4 I/O Wait
-
-        ld hl, APU_ISR_NMI      ; load our interrupt origin into the jump table 
+        pop hl                  ; load the jump table nmi address
+        ld de, APU_ISR_NMI      ; load our interrupt origin
                                 ; initially there is a RETN there
-        ld (INT_NMI_ADDR), hl   ; load the address of the APU NMI jump
+        ld (hl), e              ; load the address of the APU NMI jump
+        inc hl
+        ld (hl), d
 
 APU_INIT_LOOP:
         ld bc, __IO_APU_PORT_STATUS ; the address of the APU status port in bc
@@ -261,7 +242,6 @@ APU_INIT_LOOP:
         and __IO_APU_STATUS_BUSY    ; busy?
         jr nz, APU_INIT_LOOP
 
-        pop hl
         pop de
         pop bc
         pop af

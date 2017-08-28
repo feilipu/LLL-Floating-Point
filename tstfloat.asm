@@ -19,10 +19,25 @@ EXTERN  LADD, LSUB, LMUL, LDIV, DSQRT
 
 EXTERN  APUStatus, APUError, APUIntCount
 
-;
 ;==============================================================================
 ;       RC2014 & YAZ180 DEFINES
 ;
+
+DEFC    RAMSTART_CA0    =   $2000   ; Bottom of Common 0 RAM
+
+;   RAM Vector Address for Z80 RST Table, and for Z180 Vector Table
+DEFC    Z80_VECTOR_BASE =   RAMSTART_CA0
+
+;   Z80 Interrupt Service Routine Addresses - rewrite as needed
+DEFC    Z180_TRAP_ADDR      =   Z80_VECTOR_BASE+$01
+DEFC    RST_08_ADDR         =   Z80_VECTOR_BASE+$05
+DEFC    RST_10_ADDR         =   Z80_VECTOR_BASE+$09
+DEFC    RST_18_ADDR         =   Z80_VECTOR_BASE+$0D
+DEFC    RST_20_ADDR         =   Z80_VECTOR_BASE+$11
+DEFC    RST_28_ADDR         =   Z80_VECTOR_BASE+$15
+DEFC    RST_30_ADDR         =   Z80_VECTOR_BASE+$19
+DEFC    INT_INT0_ADDR       =   Z80_VECTOR_BASE+$1D
+DEFC    INT_NMI_ADDR        =   Z80_VECTOR_BASE+$21
 
 DEFC    DEINT   =   $0C47       ;Function DEINT to get (IX+USR) into DE registers
 DEFC    ABPASS  =   $13BD       ;Function ABPASS to put output into AB register for return
@@ -92,6 +107,7 @@ _main:
 
                                 ;EXAMPLE CODE - APU ONE OPERAND COMMAND
 
+        ld hl, INT_NMI_ADDR     ;GET NMI VECTOR ADDRESS
         CALL APU_INIT           ;INITIALISE THE APU
                                 ;Am9511A I/O is from $Cn00 to $Cn01
 
