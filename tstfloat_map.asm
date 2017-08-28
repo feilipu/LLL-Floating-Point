@@ -20,6 +20,9 @@ ORG         $2500
 SECTION     apu_data
 ORG         $2700
 
+;SCRPG      $2800   Scratch page is located here.
+;                   Contains the LLLF operands, result, and scratch area.
+
 SECTION     apu_isr
 ORG         $2900
 
@@ -28,6 +31,4 @@ ORG         $2A00
 
 SECTION     code_user
 ORG         $A000
-
-
 

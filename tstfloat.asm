@@ -126,34 +126,34 @@ TEST:
         LD A, __IO_APU_OP_ENT32 ;ENTER 32 bit (floating point from INPUT)
         CALL APU_OP_LD          ;POINTER TO OPERAND IN OPERAND BUFFER
 
-        LD A, 17h               ;COMMAND for PTOF (push floating )
+        LD A, __IO_APU_OP_PTOF  ;COMMAND for PTOF (push floating )
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
-        LD A, 12h               ;COMMAND for FMUL (floating multiply)
+        LD A, __IO_APU_OP_FMUL  ;COMMAND for FMUL (floating multiply)
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
-        LD A, 19h               ;COMMAND for XCHF (swap float)
+        LD A, __IO_APU_OP_XCHF  ;COMMAND for XCHF (swap float)
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
-        LD A, 17h               ;COMMAND for PTOF (push floating )
+        LD A, __IO_APU_OP_PTOF  ;COMMAND for PTOF (push floating )
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
-;        LD A, 13h               ;COMMAND for FDIV (floating divide)
+;        LD A, __IO_APU_OP_FDIV  ;COMMAND for FDIV (floating divide)
 ;        CALL APU_CMD_LD         ;ENTER a COMMAND
 
-        LD A, 12h               ;COMMAND for FMUL (floating multiply)
+        LD A, __IO_APU_OP_FMUL  ;COMMAND for FMUL (floating multiply)
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
-;        LD A, 11h               ;COMMAND for FSUB (floating subtract)
+;        LD A, __IO_APU_OP_FSUB  ;COMMAND for FSUB (floating subtract)
 ;        CALL APU_CMD_LD         ;ENTER a COMMAND
 
-        LD A, 10h               ;COMMAND for FADD (floating add)
+        LD A, __IO_APU_OP_FADD  ;COMMAND for FADD (floating add)
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
-        LD A, 01h               ;COMMAND for SQRT (floating square root)
+        LD A, __IO_APU_OP_SQRT  ;COMMAND for SQRT (floating square root)
         CALL APU_CMD_LD         ;ENTER a COMMAND
 
-;        LD A, 1Ah               ;COMMAND for PUPI (push Pi)
+;        LD A, __IO_APU_OP_PUPI  ;COMMAND for PUPI (push Pi)
 ;        CALL APU_CMD_LD         ;ENTER a COMMAND
 
         LD D, SCRPG             ;SET D REGISTER TO RAM SCRATCH PAGE
@@ -198,7 +198,7 @@ pstring:
     ret z               ;Then RETurn on terminator
     rst 08H             ;Print IT
     inc hl              ;Point to next character 
-    jp pstring            ;Continue until $00
+    jp pstring          ;Continue until $00
 
 
     ;print CR/LF
@@ -209,8 +209,42 @@ pnewline:
     rst 08
     ret
 
+    ;print Double Word at HL as 32 bit number in ASCII HEX
+phexdwdptr:
+    push af
+    inc hl
+    inc hl
+    inc hl
+    ld a, (hl)
+    call phex
+    dec hl
+    ld a, (hl)
+    call phex
+    dec hl
+    ld a, (hl)
+    call phex
+    dec hl
+    ld a, (hl)
+    call phex
+    pop af
+    ret
+
+    ;print contents of DEHL as 32 bit number in ASCII HEX
+phexdwdreg:
+    push af
+    ld a, d
+    call phex
+    ld a, e
+    call phex
+    ld a, h
+    call phex
+    ld a, l
+    call phex
+    pop af
+    ret
+
     ;print contents of HL as 16 bit number in ASCII HEX
-phex16:
+phexwd:
     push af
     ld a, h
     call phex

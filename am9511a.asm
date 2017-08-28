@@ -81,9 +81,9 @@ APU_ISR_ENTRY:
         or a                    ; zero?
         jr z, APU_ISR_END       ; if so then clean up and END
 
-        ld bc, __IO_APU_PORT_CONTROL    ; the address of the APU control port in BC
+        ld bc, __IO_APU_PORT_STATUS ; the address of the APU status port in BC
         in a, (c)               ; read the APU
-        and __IO_APU_CNTL_ERROR ; any errors?
+        and __IO_APU_STATUS_ERROR   ; any errors?
         call nz, APU_ISR_ERROR  ; then capture error in APUError
 
         ld hl, (APUCMDOutPtr)   ; get the pointer to place where we pop the COMMAND
@@ -96,14 +96,14 @@ APU_ISR_ENTRY:
         ld hl, APUCMDBufUsed
         dec (hl)                ; atomically decrement COMMAND count remaining
         
-        and $F0                 ; mask MSB of COMMAND
+        and $F0                 ; mask most significant nibble of COMMAND
         cp __IO_APU_OP_ENT      ; check whether it is OPERAND entry COMMAND
         jr z, APU_ISR_OP_ENT    ; load an OPERAND
 
         cp __IO_APU_OP_REM      ; check whether it is OPERAND removal COMMAND
         jr z, APU_ISR_OP_REM    ; remove an OPERAND
 
-        ld a, (APUStatus)       ; recover the COMMAND from Status
+        ld a, (APUStatus)       ; recover the COMMAND from status byte
         ld bc, __IO_APU_PORT_CONTROL    ; the address of the APU control port in BC
         out (c), a              ; load the COMMAND, and do it
 
@@ -140,7 +140,7 @@ APU_ISR_OP_ENT:
 
         outi                    ; output 16 bit OPERAND
 
-        ex (sp), hl             ; delay for 38 cycles (2.06us) TWI 1.280us
+        ex (sp), hl             ; delay for 38 cycles (5us) TWI 1.280us
         ex (sp), hl
         outi
 
@@ -148,11 +148,11 @@ APU_ISR_OP_ENT:
         cp __IO_APU_OP_ENT16    ; is it a 2 byte OPERAND
         jp z, APU_ISR_ENTRY     ; yes? then go back to get another COMMAND
 
-        ex (sp), hl             ; delay for 38 cycles (2.06us) TWI 1.280us
+        ex (sp), hl             ; delay for 38 cycles (5us) TWI 1.280us
         ex (sp), hl
         outi                    ; output last two bytes of 32 bit OPERAND
 
-        ex (sp), hl             ; delay for 38 cycles (2.06us) TWI 1.280us
+        ex (sp), hl             ; delay for 38 cycles (5us) TWI 1.280us
         ex (sp), hl
         outi
 
@@ -177,7 +177,7 @@ APU_ISR_OP_REM:
 
         ld a, (APUStatus)       ; recover the COMMAND status
         cp __IO_APU_OP_REM16    ; is it a 2 byte OPERAND
-        jr z, APU_ISR_REM16     ; yes then skip
+        jr z, APU_ISR_REM16     ; yes then skip over 32bit stuff
 
         inc hl                  ; increment two more bytes for 32bit OPERAND
         inc hl
@@ -255,9 +255,9 @@ APU_INIT:
         ld (INT_NMI_ADDR), hl   ; load the address of the APU NMI jump
 
 APU_INIT_LOOP:
-        ld bc, __IO_APU_PORT_CONTROL    ; the address of the APU Control port in bc
+        ld bc, __IO_APU_PORT_STATUS ; the address of the APU status port in bc
         in a, (c)               ; read the APU
-        and __IO_APU_CNTL_BUSY  ; busy?
+        and __IO_APU_STATUS_BUSY    ; busy?
         jr nz, APU_INIT_LOOP
 
         pop hl
@@ -273,24 +273,30 @@ APU_INIT_LOOP:
 ;       Operand Entry and Removal takes little time,
 ;       and we'll be interrupted for Command entry.
 ;       Use after the APU_ISR call.
+;
+;       A = contents of APUError (aggregation of any errors found)
+;       SCF if no errors
 
 APU_CHK_IDLE:
-        push af
         push bc
 
 APU_CHK_LOOP:
         ld a, (APUStatus)       ; get the status of the APU
-        or a                    ; check it is zero (NOP)
+        or a                    ; check it is zero (NOP) command
         jr nz, APU_CHK_LOOP     ; otherwise wait
 
-        ld bc, __IO_APU_PORT_CONTROL    ; the address of the APU control port in bc
-        in a, (c)               ; read the APU
-        and __IO_APU_CNTL_BUSY  ; busy?
-        jr nz, APU_CHK_LOOP     ; then wait
+        ld bc, __IO_APU_PORT_STATUS ; the address of the APU status port in bc
+        in a, (c)               ; read the APU status port
+        tst __IO_APU_STATUS_BUSY    ; busy bit set?
+        jr nz, APU_CHK_LOOP     ; yes, then wait
 
-        pop bc
-        pop af
-        ret
+        pop bc        
+        
+        ld a, (APUError)        ; get the aggregated errors collected
+        or a
+        ret nz                  ; return with no carrry if errors
+        scf                     ; set carry flag
+        ret                     ; return with APUError in a, carry set if no errors
 
 ;------------------------------------------------------------------------------
 ;       APU_OP_LD
@@ -376,9 +382,9 @@ APUCMDBuf:      DEFS    __APU_CMD_SIZE
 APUPTRBuf:      DEFS    __APU_PTR_SIZE
 
 ; pad to next 256 byte boundary
-IF (ASMPC & 0xff)
-   defs 256 - (ASMPC & 0xff)
-ENDIF
+;IF (ASMPC & 0xff)
+;   defs 256 - (ASMPC & 0xff)
+;ENDIF
 
 SECTION apu_data
 
