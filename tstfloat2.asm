@@ -69,7 +69,8 @@ _main:
 
                                 ;EXAMPLE CODE - TWO OPERAND INPUT
         
-        ld hl, INT_NMI_ADDR     ;GET NMI VECTOR ADDRESS
+;        ld hl, INT_INT0_ADDR    ;GET INT0 VECTOR ADDRESS - YAZ180v1
+        ld hl, INT_NMI_ADDR     ;GET NMI VECTOR ADDRESS - YAZ180v2
         CALL _am9511a_reset     ;INITIALISE THE APU
 
         LD HL, PYTHAGORAS       ;LOAD HL ADDRESS OF PYTHAGORAS
@@ -151,6 +152,7 @@ _main:
         call phexdwd
         call pnewline           ;print newline
 
+exit:
         LD SP, (STACKTOP)       ;reenable old SP
         
         ld a, (APUError)        ;any errors ?
