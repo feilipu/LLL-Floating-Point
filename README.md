@@ -8,7 +8,7 @@ Following two years of use, in **1975**, Lawrence Livermore (National) Labs rele
 
 # Lawrence Livermore (National) Labs Floating Point
 
-**1975**: Here is the [PDF of the original LLL document](http://www.llnl.gov/tid/lof/documents/pdf/171286.pdf):
+**1975**: Here is the [PDF of the original LLL document](https://github.com/z88dk/techdocs/blob/master/amd/am9511a/LLL%20Floating%20Point%20Basic.pdf):
 
 >   UCRL-51940, [Floating-Point Package for Intel 8008 and 8080 Microprocessors](http://www.llnl.gov/tid/lof/documents/pdf/171286.pdf) by Michael D. Maples, Lawrence Livermore Laboratory, University of California/Livermore, California 94550, October 24, 1975
 
